@@ -32,6 +32,10 @@ cp .env.example .env
 
 Set EXPO_PUBLIC_API_BASE_URL in .env.
 
+For in-app update checks, also set:
+- EXPO_PUBLIC_GITHUB_OWNER=<github-owner>
+- EXPO_PUBLIC_GITHUB_REPO=<github-repo>
+
 Examples:
 - Android emulator: http://10.0.2.2:8080
 - iOS simulator: http://localhost:8080
@@ -82,3 +86,33 @@ The app is wired to these backend route groups:
 - Image upload uses multipart form data matching your backend field names:
   - analyze: image
   - analyze-save: leaf-image
+
+## Android APK release automation
+The repository includes a GitHub Actions workflow that builds and uploads an APK to GitHub Releases when you push a version tag:
+- Workflow: [../.github/workflows/android-apk-release.yml](../.github/workflows/android-apk-release.yml)
+- Trigger format: vMAJOR.MINOR.PATCH (example: v1.2.3)
+
+Release flow:
+1. Bump app changes in source.
+2. Create and push a semantic version tag:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+3. GitHub Actions builds the APK and publishes:
+- leaflens-<version>.apk
+- leaflens-<version>.apk.sha256
+
+## In-app update behavior (Android)
+In About Us, use CHECK UPDATES to query the repository's latest GitHub Release.
+
+If a newer APK is found:
+1. Tap INSTALL UPDATE.
+2. The app downloads the APK.
+3. Android installer opens to complete install.
+
+App data is preserved across upgrades when:
+- package id stays the same (`com.leaflens.mobile`), and
+- builds are signed with a consistent signing key.
