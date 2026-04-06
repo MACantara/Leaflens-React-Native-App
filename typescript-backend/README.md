@@ -38,6 +38,7 @@ This folder contains the TypeScript/Node.js Leaflens backend API.
 - `npm run start`: Start compiled app from `dist/server.js`
 - `npm run typecheck`: Run TypeScript checks without emitting files
 - `npm run images:backfill-1080p`: Resize all bucket images to 1080p and transcode the image bytes to WebP (uses temporary files and removes them automatically)
+- `npm run db:migrate:delete-non-applicable-leaves`: Delete non-applicable leaf records and remove their stored images
 
 ## Local setup
 1. Copy `.env.example` to `.env` and fill values.
@@ -84,5 +85,6 @@ For full deployment steps, troubleshooting, and team onboarding notes, see:
 
 ## Notes
 - Uploads are normalized to a maximum of 1920x1080 and converted to WebP before analysis/storage.
+- If analysis is not applicable, `analyze-save` will not store the record or image.
 - `images:backfill-1080p` updates existing bucket objects to 1080p + WebP and synchronizes Mongo image metadata.
 - Set `EXPO_PUBLIC_API_BASE_URL` in the React Native app to this backend URL.

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { collections, nextSequence, type LeafDoc } from '../db.js';
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
+import { isApplicableAnalysis } from '../services/analysisApplicability.js';
 import { analyzeLeafImage } from '../services/aiAnalyzer.js';
 import { normalizeImageBufferTo1080p } from '../services/imageProcessing.js';
 import { deleteLeafImageFromStorage, uploadLeafImageToStorage } from '../services/objectStorage.js';
@@ -83,6 +84,15 @@ leafAnalyzerRouter.post(
     });
 
     const analysis = await analyzeLeafImage(normalizedImage.buffer, normalizedImage.contentType);
+
+    if (!isApplicableAnalysis(analysis)) {
+      res.json({
+        message: 'Leaf is not applicable and was not saved.',
+        analysis,
+        userId
+      });
+      return;
+    }
 
     const leafId = await nextSequence('leafId');
     const now = new Date();
