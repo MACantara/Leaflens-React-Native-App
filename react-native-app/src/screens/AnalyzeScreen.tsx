@@ -156,12 +156,15 @@ export function AnalyzeScreen({ session }: AnalyzeScreenProps): React.JSX.Elemen
       <View style={styles.controlRow}>
         <Pressable style={styles.controlButton} onPress={openSourcePicker}>
           <Feather name="refresh-cw" size={25} color="#f4f4f4" />
+          <Text style={styles.controlButtonLabel}>Source</Text>
         </Pressable>
         <Pressable style={styles.captureButton} onPress={() => void openCamera()}>
           <View style={styles.captureCircle} />
+          <Text style={styles.captureButtonLabel}>Camera</Text>
         </Pressable>
-        <Pressable style={styles.controlButton} onPress={runAnalysis} disabled={loading}>
+        <Pressable style={[styles.controlButton, loading && styles.controlButtonDisabled]} onPress={runAnalysis} disabled={loading}>
           <MaterialCommunityIcons name="leaf" size={25} color="#f4f4f4" />
+          <Text style={styles.controlButtonLabel}>{loading ? 'Running...' : 'Analyze'}</Text>
         </Pressable>
       </View>
 
@@ -219,7 +222,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#95bf3f',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    gap: 6
+  },
+  controlButtonDisabled: {
+    opacity: 0.72
   },
   captureButton: {
     width: 84,
@@ -227,7 +234,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#d2e59d',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    gap: 6
   },
   captureCircle: {
     width: 24,
@@ -235,6 +243,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 3,
     borderColor: '#ffffff'
+  },
+  controlButtonLabel: {
+    color: '#f8fafc',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2
+  },
+  captureButtonLabel: {
+    color: '#1f2937',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2
   },
   helperText: {
     color: '#4b5563'
