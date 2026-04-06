@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Modal, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFonts } from 'expo-font';
 import { AuthScreen } from './src/screens/AuthScreen.tsx';
 import { AnalyzeScreen } from './src/screens/AnalyzeScreen.tsx';
 import { CollectionScreen } from './src/screens/CollectionScreen.tsx';
@@ -45,9 +46,22 @@ export default function App(): React.JSX.Element {
   const [session, setSession] = useState<Session | undefined>();
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [menuVisible, setMenuVisible] = useState(false);
+  const [iconsLoaded] = useFonts({
+    ...Feather.font,
+    ...Ionicons.font,
+    ...MaterialCommunityIcons.font
+  });
 
   const welcomeText = useMemo(() => (session ? session.userName : 'Guest'), [session]);
   const headerTopPadding = Platform.OS === 'android' ? (NativeStatusBar.currentHeight ?? 0) + 8 : 8;
+
+  if (!iconsLoaded) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <ExpoStatusBar style="dark" />
+      </SafeAreaView>
+    );
+  }
 
   function handleLogout(): void {
     setSession(undefined);
