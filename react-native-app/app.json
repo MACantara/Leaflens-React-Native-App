@@ -12,6 +12,11 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.leaflens.mobile",
+      "versionCode": 1,
+      "permissions": [
+        "REQUEST_INSTALL_PACKAGES"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       }
