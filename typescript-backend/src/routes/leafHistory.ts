@@ -5,6 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { HttpError } from '../utils/errors.js';
 import { toLeafDto } from '../utils/leafMapper.js';
 import { toCaseInsensitiveRegex, toTagArray } from '../utils/query.js';
+import { ensureUserCollection } from '../utils/collection.js';
 import { deleteLeafImageFromStorage, readLeafImageFromStorage } from '../services/objectStorage.js';
 
 export const leafHistoryRouter = Router();
@@ -29,12 +30,7 @@ leafHistoryRouter.get(
     assertSameUser(authReq, userId);
 
     const dbCollections = await collections();
-    const selectedCollection = await dbCollections.leafCollections.findOne({ userId });
-
-    if (!selectedCollection) {
-      res.status(404).json({ error: 'Collection not found' });
-      return;
-    }
+    const selectedCollection = await ensureUserCollection(userId);
 
     const leafIds = selectedCollection.leafIds ?? [];
     const leaves =
