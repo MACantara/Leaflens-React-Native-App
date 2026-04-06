@@ -37,7 +37,7 @@ This folder contains the TypeScript/Node.js Leaflens backend API.
 - `npm run build`: Compile TypeScript into `dist/`
 - `npm run start`: Start compiled app from `dist/server.js`
 - `npm run typecheck`: Run TypeScript checks without emitting files
-- `npm run images:backfill-1080p`: Resize all bucket images to 1080p and convert to WebP (uses temporary files and removes them automatically)
+- `npm run images:backfill-1080p`: Resize all bucket images to 1080p and transcode the image bytes to WebP (uses temporary files and removes them automatically)
 
 ## Local setup
 1. Copy `.env.example` to `.env` and fill values.

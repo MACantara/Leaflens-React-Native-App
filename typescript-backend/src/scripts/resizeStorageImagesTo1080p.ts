@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import path from 'path';
+import sharp from 'sharp';
 import { collections } from '../db.js';
 import { normalizeImageFileTo1080p } from '../services/imageProcessing.js';
 import {
@@ -53,6 +54,15 @@ function parseLeafIdFromKey(key: string): number | undefined {
 
   const value = Number(match[1]);
   return Number.isFinite(value) ? value : undefined;
+}
+
+async function readImageFormat(buffer: Buffer): Promise<string> {
+  try {
+    const metadata = await sharp(buffer).metadata();
+    return (metadata.format ?? 'unknown').toLowerCase();
+  } catch {
+    return 'unknown';
+  }
 }
 
 async function loadLeafImageMetadata(): Promise<Map<string, LeafImageMeta>> {
@@ -117,6 +127,7 @@ async function run(): Promise<void> {
           }
 
           const contentType = inferContentType(stored.contentType, object.key);
+          const sourceFormat = await readImageFormat(stored.data);
           const keyMeta = leafMetaByKey.get(object.key);
           const leafId = keyMeta?.leafId ?? parseLeafIdFromKey(object.key);
           const filename = keyMeta?.filename ?? path.basename(object.key);
@@ -130,6 +141,11 @@ async function run(): Promise<void> {
             contentType,
             filename
           });
+
+          const outputFormat = await readImageFormat(normalized.buffer);
+          if (outputFormat !== 'webp') {
+            throw new Error(`Expected WebP output but got ${outputFormat}`);
+          }
 
           await overwriteLeafImageInStorage({
             key: object.key,
@@ -153,7 +169,9 @@ async function run(): Promise<void> {
           }
 
           processed += 1;
-          console.log(`[OK] ${object.key} -> ${normalized.width}x${normalized.height}, ${normalized.buffer.length} bytes`);
+          console.log(
+            `[OK] ${object.key} (${sourceFormat} -> webp) -> ${normalized.width}x${normalized.height}, ${normalized.buffer.length} bytes`
+          );
         } catch (error) {
           failed += 1;
           const message = error instanceof Error ? error.message : String(error);
