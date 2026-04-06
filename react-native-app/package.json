@@ -8,6 +8,9 @@
     "start:dev": "expo start --clear",
     "android": "expo start --android",
     "android:check": "powershell -ExecutionPolicy Bypass -File ./scripts/check-android-setup.ps1",
+    "build:apk-local": "node ./scripts/build-apk-local.mjs --clean",
+    "build:apk-local:fast": "node ./scripts/build-apk-local.mjs --no-clean",
+    "build:apk-local:gradle": "node ./scripts/build-apk-local.mjs --gradle-only",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit"
