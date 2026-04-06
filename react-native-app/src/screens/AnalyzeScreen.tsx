@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { analyzeAndSaveLeaf, analyzeLeaf } from '../api/leaves';
@@ -20,10 +20,10 @@ function getErrorMessage(error: unknown): string {
   return 'Unexpected error.';
 }
 
-function renderResult(result: LeafAnalysisResponse, imageUri: string): React.JSX.Element {
+function renderResult(result: LeafAnalysisResponse, imageUri: string, resultImageHeight: number): React.JSX.Element {
   return (
     <View style={styles.resultCard}>
-      <Image source={{ uri: imageUri }} style={styles.resultImage} />
+      <Image source={{ uri: imageUri }} style={[styles.resultImage, { height: resultImageHeight }]} />
       <Text style={styles.resultTitle}>{result.commonName || 'N/A'}</Text>
       <Text style={styles.resultScientific}>{result.scientificName || 'N/A'}</Text>
 
@@ -44,6 +44,10 @@ export function AnalyzeScreen({ session }: AnalyzeScreenProps): React.JSX.Elemen
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<LeafAnalysisResponse | undefined>();
+  const { height: viewportHeight } = useWindowDimensions();
+
+  const previewHeight = Math.max(220, Math.min(420, Math.round(viewportHeight * 0.4)));
+  const resultImageHeight = Math.max(180, Math.min(280, Math.round(previewHeight * 0.64)));
 
   function handleImageSelection(uri: string): void {
     setImageUri(uri);
@@ -140,9 +144,9 @@ export function AnalyzeScreen({ session }: AnalyzeScreenProps): React.JSX.Elemen
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <View style={styles.previewWrap}>
         {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.preview} />
+          <Image source={{ uri: imageUri }} style={[styles.preview, { height: previewHeight }]} />
         ) : (
-          <View style={styles.previewPlaceholder}>
+          <View style={[styles.previewPlaceholder, { height: previewHeight }]}>
             <MaterialCommunityIcons name="leaf" size={58} color="#a3a3a3" />
             <Text style={styles.previewText}>Capture a leaf photo to begin</Text>
           </View>
@@ -166,7 +170,7 @@ export function AnalyzeScreen({ session }: AnalyzeScreenProps): React.JSX.Elemen
       {!session && <Text style={styles.helperText}>Sign in to save every successful analysis to your history.</Text>}
 
       {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
-      {result && imageUri && renderResult(result, imageUri)}
+      {result && imageUri && renderResult(result, imageUri, resultImageHeight)}
     </ScrollView>
   );
 }
@@ -188,12 +192,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#d1d5db'
   },
   preview: {
-    width: '100%',
-    height: 520
+    width: '100%'
   },
   previewPlaceholder: {
     width: '100%',
-    height: 520,
     backgroundColor: '#d6d3d1',
     alignItems: 'center',
     justifyContent: 'center',
