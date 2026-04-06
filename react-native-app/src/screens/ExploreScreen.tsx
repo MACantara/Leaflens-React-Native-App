@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
   FlatList,
+  Image,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View
 } from 'react-native';
-import { exploreLeaves, saveExploreLeaf } from '../api/leaves';
+import { exploreLeaves, getLeafImageUrl, saveExploreLeaf } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
 
@@ -103,6 +104,14 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <View style={styles.card}>
+            {item.imageFilename || item.imageContentType || item.imageSize ? (
+              <Image source={{ uri: getLeafImageUrl(item.leafId) }} style={styles.leafImage} />
+            ) : (
+              <View style={styles.leafImagePlaceholder}>
+                <Text style={styles.leafImagePlaceholderText}>No image available</Text>
+              </View>
+            )}
+
             <Text style={styles.leafTitle}>{item.commonName || 'Unknown'}</Text>
             <Text style={styles.leafMetaLabel}>Scientific Name</Text>
             <Text style={styles.leafMetaValue}>{item.scientificName || 'N/A'}</Text>
@@ -209,6 +218,27 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 8,
     elevation: 2
+  },
+  leafImage: {
+    width: '100%',
+    height: 210,
+    borderRadius: 14,
+    backgroundColor: '#d1d5db',
+    marginBottom: 8
+  },
+  leafImagePlaceholder: {
+    width: '100%',
+    height: 210,
+    borderRadius: 14,
+    backgroundColor: '#e6dfdb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8
+  },
+  leafImagePlaceholderText: {
+    color: '#6b7280',
+    fontSize: 13,
+    fontWeight: '600'
   },
   leafTitle: {
     fontSize: 18,
