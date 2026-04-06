@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { login, register } from '../api/auth';
 import { ApiError } from '../api/client';
@@ -17,9 +17,11 @@ function parseApiError(error: unknown): string {
     }
     return error.message;
   }
+
   if (error instanceof Error) {
     return error.message;
   }
+
   return 'Unexpected error occurred.';
 }
 
@@ -31,17 +33,16 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const title = useMemo(() => (mode === 'login' ? 'Sign In' : 'Create Account'), [mode]);
+  const isLoginMode = mode === 'login';
 
   async function onSubmit(): Promise<void> {
     setLoading(true);
     setError('');
 
     try {
-      const response =
-        mode === 'login'
-          ? await login(email.trim(), password)
-          : await register(userName.trim(), email.trim(), password);
+      const response = isLoginMode
+        ? await login(email.trim(), password)
+        : await register(userName.trim(), email.trim(), password);
 
       onAuthenticated({
         token: response.token,
@@ -58,36 +59,20 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
 
   return (
     <View style={styles.root}>
-      <View style={styles.heroWrap}>
-        <Text style={styles.heading}>LeafLens</Text>
-        <Text style={styles.subheading}>Identify and manage medicinal leaves with your personal collection and history.</Text>
-      </View>
-
-      <View style={styles.modeRow}>
-        <Pressable style={[styles.modeButton, mode === 'login' && styles.modeButtonActive]} onPress={() => setMode('login')}>
-          <Text style={[styles.modeLabel, mode === 'login' && styles.modeLabelActive]}>Login</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.modeButton, mode === 'register' && styles.modeButtonActive]}
-          onPress={() => setMode('register')}
-        >
-          <Text style={[styles.modeLabel, mode === 'register' && styles.modeLabelActive]}>Register</Text>
-        </Pressable>
+      <View style={styles.brandWrap}>
+        <View style={styles.logoMark}>
+          <View style={styles.logoLeft} />
+          <View style={styles.logoRight} />
+        </View>
+        <Text style={styles.brandText}>LEAFLENS</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={styles.cardCaption}>
-          {mode === 'login'
-            ? 'Sign in to access your saved leaves and history.'
-            : 'Create an account to start building your leaf collection.'}
-        </Text>
-
         {mode === 'register' && (
           <TextInput
             style={styles.input}
             placeholder="Username"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor="#b4b7bf"
             value={userName}
             onChangeText={setUserName}
             autoCapitalize="none"
@@ -97,7 +82,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#b4b7bf"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -107,7 +92,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
         <TextInput
           style={styles.input}
           placeholder="Password"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#b4b7bf"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -119,9 +104,21 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
           </View>
         )}
 
-        <Pressable style={[styles.primaryButton, loading && styles.primaryButtonDisabled]} onPress={onSubmit} disabled={loading}>
-          <Text style={styles.primaryButtonLabel}>{loading ? 'Please wait...' : title}</Text>
+        <Pressable style={[styles.submitButton, loading && styles.submitButtonDisabled]} onPress={onSubmit} disabled={loading}>
+          <Text style={styles.submitButtonText}>{loading ? 'Please wait...' : isLoginMode ? 'Login' : 'Create Account'}</Text>
         </Pressable>
+
+        <View style={styles.toggleWrap}>
+          <Text style={styles.togglePrompt}>{isLoginMode ? 'Does not have an account yet?' : 'Already have an account?'}</Text>
+          <Pressable
+            onPress={() => {
+              setMode(isLoginMode ? 'register' : 'login');
+              setError('');
+            }}
+          >
+            <Text style={styles.toggleAction}>{isLoginMode ? 'Create One' : 'Login'}</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -130,104 +127,113 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    justifyContent: 'center',
     backgroundColor: '#ece1dd',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 14
+    paddingHorizontal: 24,
+    paddingTop: 92,
+    paddingBottom: 20
   },
-  heroWrap: {
-    gap: 4
+  brandWrap: {
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 34
   },
-  heading: {
-    fontSize: 34,
+  logoMark: {
+    width: 52,
+    height: 42,
+    position: 'relative'
+  },
+  logoLeft: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 24,
+    height: 36,
+    borderLeftWidth: 9,
+    borderBottomWidth: 9,
+    borderColor: '#b4c663'
+  },
+  logoRight: {
+    position: 'absolute',
+    right: 0,
+    top: 6,
+    width: 24,
+    height: 36,
+    borderRightWidth: 9,
+    borderTopWidth: 9,
+    borderColor: '#69c665'
+  },
+  brandText: {
+    color: '#09090b',
+    letterSpacing: 4,
     fontWeight: '800',
-    color: '#111827'
-  },
-  subheading: {
-    fontSize: 15,
-    color: '#4b5563',
-    lineHeight: 22,
-    marginBottom: 4
-  },
-  modeRow: {
-    flexDirection: 'row',
-    backgroundColor: '#d2dcc8',
-    borderRadius: 16,
-    padding: 4,
-    gap: 4
-  },
-  modeButton: {
-    flex: 1,
-    paddingVertical: 11,
-    borderRadius: 12,
-    alignItems: 'center'
-  },
-  modeButtonActive: {
-    backgroundColor: '#ffffff'
-  },
-  modeLabel: {
-    color: '#475569',
-    fontWeight: '700'
-  },
-  modeLabelActive: {
-    color: '#111827'
+    fontSize: 16
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 18,
-    gap: 10,
+    backgroundColor: '#ececec',
+    borderRadius: 32,
+    paddingTop: 30,
+    paddingBottom: 26,
+    paddingHorizontal: 22,
+    gap: 14,
     shadowColor: '#000000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 8,
-    elevation: 3
-  },
-  cardTitle: {
-    fontSize: 21,
-    fontWeight: '800',
-    color: '#111827'
-  },
-  cardCaption: {
-    color: '#64748b',
-    fontSize: 14,
-    marginBottom: 2
+    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 7 },
+    shadowRadius: 16,
+    elevation: 8
   },
   input: {
+    minHeight: 56,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: '#f8fafc',
-    color: '#111827'
+    borderColor: '#cbcbcb',
+    backgroundColor: '#efefef',
+    color: '#111827',
+    fontSize: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 12
   },
   errorBox: {
-    backgroundColor: '#fee2e2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
     borderRadius: 12,
+    backgroundColor: '#fee2e2',
     paddingHorizontal: 12,
-    paddingVertical: 9
+    paddingVertical: 10
   },
   errorText: {
     color: '#b91c1c',
+    textAlign: 'center',
     fontWeight: '600'
   },
-  primaryButton: {
-    marginTop: 6,
+  submitButton: {
+    marginTop: 4,
+    minHeight: 72,
+    borderRadius: 22,
     backgroundColor: '#8bc34a',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  primaryButtonDisabled: {
+  submitButtonDisabled: {
     backgroundColor: '#b4c694'
   },
-  primaryButtonLabel: {
-    color: '#f3fff0',
-    fontSize: 16,
+  submitButtonText: {
+    color: '#0f172a',
+    fontWeight: '700',
+    fontSize: 18
+  },
+  toggleWrap: {
+    marginTop: 14,
+    paddingBottom: 4,
+    alignItems: 'center',
+    gap: 10
+  },
+  togglePrompt: {
+    color: '#8c8c8c',
+    fontSize: 17,
+    fontWeight: '600',
+    textAlign: 'center'
+  },
+  toggleAction: {
+    color: '#1f1f1f',
+    fontSize: 18,
     fontWeight: '700'
   }
 });
