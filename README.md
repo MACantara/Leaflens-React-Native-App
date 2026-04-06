@@ -12,4 +12,9 @@ Set up API service:
 
 - Backend service docs: [`typescript-backend/README.md`](typescript-backend/README.md)
 - Railway deployment runbook: [`typescript-backend/docs/railway-deployment.md`](typescript-backend/docs/railway-deployment.md)
+
+## Mobile APK release and updates
+
+- Mobile app docs: [`react-native-app/README.md`](react-native-app/README.md)
+- APK release workflow: [`.github/workflows/android-apk-release.yml`](.github/workflows/android-apk-release.yml)
    
