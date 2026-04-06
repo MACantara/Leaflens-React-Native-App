@@ -3,6 +3,7 @@ import multer from 'multer';
 import { collections, nextSequence, type LeafDoc } from '../db.js';
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
 import { analyzeLeafImage } from '../services/aiAnalyzer.js';
+import { normalizeImageBufferTo1080p } from '../services/imageProcessing.js';
 import { deleteLeafImageFromStorage, uploadLeafImageToStorage } from '../services/objectStorage.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { HttpError } from '../utils/errors.js';
@@ -25,7 +26,13 @@ leafAnalyzerRouter.post(
         return;
       }
 
-      const analysis = await analyzeLeafImage(req.file.buffer, req.file.mimetype || 'image/jpeg');
+      const normalizedImage = await normalizeImageBufferTo1080p({
+        image: req.file.buffer,
+        contentType: req.file.mimetype || 'image/jpeg',
+        filename: req.file.originalname || 'leaf-image.jpg'
+      });
+
+      const analysis = await analyzeLeafImage(normalizedImage.buffer, normalizedImage.contentType);
       res.json(analysis);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -69,12 +76,16 @@ leafAnalyzerRouter.post(
       throw new HttpError(404, 'User not found');
     }
 
-    const analysis = await analyzeLeafImage(req.file.buffer, req.file.mimetype || 'image/jpeg');
+    const normalizedImage = await normalizeImageBufferTo1080p({
+      image: req.file.buffer,
+      contentType: req.file.mimetype || 'image/jpeg',
+      filename: req.file.originalname || 'leaf-image.jpg'
+    });
+
+    const analysis = await analyzeLeafImage(normalizedImage.buffer, normalizedImage.contentType);
 
     const leafId = await nextSequence('leafId');
     const now = new Date();
-    const sourceMimeType = req.file.mimetype || 'image/jpeg';
-    const sourceFilename = req.file.originalname || 'leaf-image.jpg';
     const normalizedTags = analysis.tags
       .map((tag) => tag.trim())
       .filter((tag) => tag.length > 0)
@@ -92,9 +103,9 @@ leafAnalyzerRouter.post(
       }));
 
     const uploadedImage = await uploadLeafImageToStorage({
-      image: req.file.buffer,
-      contentType: sourceMimeType,
-      filename: sourceFilename,
+      image: normalizedImage.buffer,
+      contentType: normalizedImage.contentType,
+      filename: normalizedImage.filename,
       leafId
     });
 
