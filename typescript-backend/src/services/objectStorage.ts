@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { env } from '../env.js';
 
@@ -13,6 +13,11 @@ export interface UploadedLeafImage {
 export interface StoredLeafImage {
   data: Buffer;
   contentType: string;
+  size: number;
+}
+
+export interface StorageObjectSummary {
+  key: string;
   size: number;
 }
 
@@ -126,6 +131,60 @@ export async function deleteLeafImageFromStorage(key: string): Promise<void> {
     new DeleteObjectCommand({
       Bucket: env.s3Bucket,
       Key: key
+    })
+  );
+}
+
+export async function listLeafImageObjects(params?: {
+  continuationToken?: string;
+  maxKeys?: number;
+  prefix?: string;
+}): Promise<{ objects: StorageObjectSummary[]; nextContinuationToken?: string }> {
+  const client = getS3Client();
+  const response = await client.send(
+    new ListObjectsV2Command({
+      Bucket: env.s3Bucket,
+      Prefix: params?.prefix,
+      ContinuationToken: params?.continuationToken,
+      MaxKeys: params?.maxKeys
+    })
+  );
+
+  const objects = (response.Contents ?? [])
+    .filter((item): item is { Key: string; Size?: number } => typeof item.Key === 'string' && item.Key.length > 0)
+    .map((item) => ({
+      key: item.Key,
+      size: Number(item.Size ?? 0)
+    }));
+
+  return {
+    objects,
+    nextContinuationToken: response.NextContinuationToken
+  };
+}
+
+export async function overwriteLeafImageInStorage(params: {
+  key: string;
+  image: Buffer;
+  contentType: string;
+  leafId?: number;
+}): Promise<void> {
+  const client = getS3Client();
+  const metadata =
+    typeof params.leafId === 'number' && Number.isFinite(params.leafId)
+      ? {
+          leafid: String(params.leafId)
+        }
+      : undefined;
+
+  await client.send(
+    new PutObjectCommand({
+      Bucket: env.s3Bucket,
+      Key: params.key,
+      Body: params.image,
+      ContentType: params.contentType,
+      ContentLength: params.image.length,
+      Metadata: metadata
     })
   );
 }
