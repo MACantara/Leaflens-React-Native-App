@@ -11,6 +11,10 @@ permissions:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    env:
+      EXPO_PUBLIC_API_BASE_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
+      EXPO_PUBLIC_GITHUB_OWNER: ${{ vars.EXPO_PUBLIC_GITHUB_OWNER }}
+      EXPO_PUBLIC_GITHUB_REPO: ${{ vars.EXPO_PUBLIC_GITHUB_REPO }}
     defaults:
       run:
         working-directory: react-native-app
@@ -67,6 +71,48 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Prepare release env
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          API_BASE_URL="${EXPO_PUBLIC_API_BASE_URL:-}"
+          if [[ -z "$API_BASE_URL" ]]; then
+            API_BASE_URL="https://leaflens-backend.up.railway.app"
+            echo "EXPO_PUBLIC_API_BASE_URL was not set in repo variables. Falling back to $API_BASE_URL"
+          fi
+
+          OWNER="${EXPO_PUBLIC_GITHUB_OWNER:-}"
+          REPO="${EXPO_PUBLIC_GITHUB_REPO:-}"
+
+          if [[ "$REPO" == http*://* ]]; then
+            REPO_PATH="${REPO#*github.com/}"
+            REPO_PATH="${REPO_PATH%.git}"
+            URL_OWNER="${REPO_PATH%%/*}"
+            URL_REPO="${REPO_PATH##*/}"
+
+            if [[ -z "$OWNER" ]]; then
+              OWNER="$URL_OWNER"
+            fi
+            REPO="$URL_REPO"
+          fi
+
+          if [[ -z "$OWNER" ]]; then
+            OWNER="${GITHUB_REPOSITORY%%/*}"
+          fi
+
+          if [[ -z "$REPO" ]]; then
+            REPO="${GITHUB_REPOSITORY##*/}"
+          fi
+
+          cat > .env <<EOF
+          EXPO_PUBLIC_API_BASE_URL=$API_BASE_URL
+          EXPO_PUBLIC_GITHUB_OWNER=$OWNER
+          EXPO_PUBLIC_GITHUB_REPO=$REPO
+          EOF
+
+          echo "Prepared build .env for release bundle"
 
       - name: Generate native Android project
         run: npx expo prebuild --platform android --non-interactive --clean
