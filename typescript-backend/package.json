@@ -8,7 +8,8 @@
     "start": "node dist/server.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "images:backfill-1080p": "tsx src/scripts/resizeStorageImagesTo1080p.ts"
+    "images:backfill-1080p": "tsx src/scripts/resizeStorageImagesTo1080p.ts",
+    "db:migrate:delete-non-applicable-leaves": "tsx src/scripts/deleteNonApplicableLeaves.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1024.0",
