@@ -31,9 +31,36 @@ export interface AppUpdateCheckResult {
   downloadUrl?: string;
 }
 
+function normalizeRepoFromUrl(value: string): { owner?: string; repo?: string } {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    return {};
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    const parts = parsed.pathname.replace(/^\//, '').replace(/\.git$/, '').split('/').filter(Boolean);
+
+    if (parts.length < 2) {
+      return {};
+    }
+
+    return {
+      owner: parts[0],
+      repo: parts[1]
+    };
+  } catch {
+    return {};
+  }
+}
+
 function getGithubRepoConfig(): { owner: string; repo: string } {
-  const owner = (process.env.EXPO_PUBLIC_GITHUB_OWNER ?? '').trim();
-  const repo = (process.env.EXPO_PUBLIC_GITHUB_REPO ?? '').trim();
+  const rawOwner = (process.env.EXPO_PUBLIC_GITHUB_OWNER ?? '').trim();
+  const rawRepo = (process.env.EXPO_PUBLIC_GITHUB_REPO ?? '').trim();
+  const fromRepoUrl = normalizeRepoFromUrl(rawRepo);
+
+  const owner = rawOwner || fromRepoUrl.owner || '';
+  const repo = (fromRepoUrl.repo || rawRepo).replace(/^\//, '').replace(/\.git$/, '');
 
   if (!owner || !repo) {
     throw new Error('Missing GitHub update config. Set EXPO_PUBLIC_GITHUB_OWNER and EXPO_PUBLIC_GITHUB_REPO in your .env.');
@@ -94,7 +121,12 @@ export function getCurrentAppVersion(): string {
 }
 
 export function isUpdateConfigPresent(): boolean {
-  return Boolean(process.env.EXPO_PUBLIC_GITHUB_OWNER && process.env.EXPO_PUBLIC_GITHUB_REPO);
+  try {
+    const config = getGithubRepoConfig();
+    return Boolean(config.owner && config.repo);
+  } catch {
+    return false;
+  }
 }
 
 export function toErrorMessage(error: unknown): string {
