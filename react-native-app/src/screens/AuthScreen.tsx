@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { login, register } from '../api/auth';
 import { ApiError } from '../api/client';
 import { Session } from '../types/models';
@@ -30,6 +31,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
   const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -99,14 +101,23 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
 
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#b4b7bf"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          <View style={styles.passwordWrap}>
+            <TextInput
+              style={[styles.input, styles.passwordInput]}
+              placeholder="Password"
+              placeholderTextColor="#b4b7bf"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <Pressable
+              style={styles.passwordToggleButton}
+              onPress={() => setShowPassword((value) => !value)}
+              hitSlop={8}
+            >
+              <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#6b7280" />
+            </Pressable>
+          </View>
         </View>
 
         {error.length > 0 && (
@@ -217,6 +228,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 18,
     paddingVertical: 12
+  },
+  passwordWrap: {
+    position: 'relative'
+  },
+  passwordInput: {
+    paddingRight: 50
+  },
+  passwordToggleButton: {
+    position: 'absolute',
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center'
   },
   errorBox: {
     borderRadius: 12,
