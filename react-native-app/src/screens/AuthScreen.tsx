@@ -187,10 +187,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     gap: 14,
     shadowColor: '#000000',
-    shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 7 },
-    shadowRadius: 16,
-    elevation: 8
+    shadowOpacity: 0.07,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 4
   },
   formTitle: {
     color: '#111827',
