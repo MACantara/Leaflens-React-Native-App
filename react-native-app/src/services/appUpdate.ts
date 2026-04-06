@@ -20,6 +20,52 @@ interface GithubRelease {
   assets: GithubReleaseAsset[];
 }
 
+const FLAG_GRANT_READ_URI_PERMISSION = 1;
+const FLAG_ACTIVITY_NEW_TASK = 268435456;
+
+function shouldOpenInstallPermissionSettings(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return /permission|security|unknown\s+sources|request_install_packages|not\s+allowed/i.test(error.message);
+}
+
+async function openInstallPermissionSettings(): Promise<boolean> {
+  const appId = (Application.applicationId ?? '').trim();
+  if (!appId) {
+    return false;
+  }
+
+  try {
+    await IntentLauncher.startActivityAsync('android.settings.MANAGE_UNKNOWN_APP_SOURCES', {
+      data: `package:${appId}`
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function openApkInstaller(contentUri: string): Promise<void> {
+  try {
+    await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
+      data: contentUri,
+      flags: FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK,
+      type: 'application/vnd.android.package-archive'
+    });
+    return;
+  } catch {
+    // Some package installers do not support INSTALL_PACKAGE; VIEW is a practical fallback.
+  }
+
+  await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+    data: contentUri,
+    flags: FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK,
+    type: 'application/vnd.android.package-archive'
+  });
+}
+
 export interface AppUpdateCheckResult {
   isUpdateAvailable: boolean;
   currentVersion: string;
@@ -208,9 +254,19 @@ export async function downloadAndInstallUpdate(
   }
 
   const contentUri = await FileSystem.getContentUriAsync(result.uri);
-  await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
-    data: contentUri,
-    flags: 1 | 268435456,
-    type: 'application/vnd.android.package-archive'
-  });
+
+  try {
+    await openApkInstaller(contentUri);
+  } catch (installError) {
+    if (shouldOpenInstallPermissionSettings(installError)) {
+      const openedSettings = await openInstallPermissionSettings();
+      if (openedSettings) {
+        throw new Error('Android blocked APK installation for this app. Enable "Install unknown apps" for LeafLens, then tap INSTALL UPDATE again.');
+      }
+
+      throw new Error('Android blocked APK installation for this app. Enable "Install unknown apps" for LeafLens in system settings, then tap INSTALL UPDATE again.');
+    }
+
+    throw installError;
+  }
 }
