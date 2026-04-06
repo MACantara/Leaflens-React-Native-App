@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
@@ -48,25 +48,84 @@ function parseJavaMajor(versionText) {
   return first;
 }
 
-function resolveJava17Home() {
+function resolveCompatibleJavaHome() {
   const candidates = [
+    process.env.JAVA_HOME_21_X64,
     process.env.JAVA_HOME_17_X64,
+    process.env.JAVA_HOME,
+    '/usr/lib/jvm/java-21-openjdk-amd64',
+    '/usr/lib/jvm/java-21-openjdk',
     '/usr/lib/jvm/java-17-openjdk-amd64',
     '/usr/lib/jvm/java-17-openjdk',
+    '/usr/lib/jvm/temurin-21-jdk-amd64',
+    '/usr/lib/jvm/temurin-21-jdk',
     '/usr/lib/jvm/temurin-17-jdk-amd64',
     '/usr/lib/jvm/temurin-17-jdk'
   ].filter(Boolean);
 
-  return candidates.find((candidate) => existsSync(path.join(candidate, 'bin', process.platform === 'win32' ? 'java.exe' : 'java')));
+  if (existsSync('/usr/lib/jvm')) {
+    try {
+      const entries = readFileSync('/usr/lib/jvm/.', 'utf8');
+      void entries;
+    } catch {
+      // no-op; path probing below still works with static candidates
+    }
+  }
+
+  return candidates.find((candidate) => {
+    const javaBin = path.join(candidate, 'bin', process.platform === 'win32' ? 'java.exe' : 'java');
+    if (!existsSync(javaBin)) {
+      return false;
+    }
+
+    const version = runCapture(javaBin, ['-version']);
+    const combined = `${version.stdout ?? ''}\n${version.stderr ?? ''}`;
+    const major = parseJavaMajor(combined);
+    return major === 17 || major === 21;
+  });
+}
+
+function printJavaInstallHint(currentMajor) {
+  console.error('Local Android build requires Java 17 or 21 for this Gradle/AGP setup.');
+  if (typeof currentMajor === 'number') {
+    console.error(`Detected Java ${currentMajor}.`);
+  }
+
+  if (process.platform === 'linux') {
+    let distro = '';
+    try {
+      const osRelease = readFileSync('/etc/os-release', 'utf8');
+      const idMatch = osRelease.match(/^ID=(.+)$/m);
+      distro = idMatch ? idMatch[1].replace(/"/g, '') : '';
+    } catch {
+      distro = '';
+    }
+
+    if (distro === 'fedora') {
+      console.error('Install with: sudo dnf install java-21-openjdk-devel');
+      console.error('Then rerun: npm run build:apk-local');
+      return;
+    }
+
+    console.error('Install Java 17 or 21 and set JAVA_HOME, then rerun the build.');
+    return;
+  }
+
+  if (process.platform === 'win32') {
+    console.error('Install JDK 17/21 and set JAVA_HOME to that installation path.');
+    return;
+  }
+
+  console.error('Install JDK 17/21 and export JAVA_HOME before running the build.');
 }
 
 function withPreferredJavaEnv(baseEnv) {
   const env = { ...baseEnv };
-  const resolvedJava17 = resolveJava17Home();
+  const resolvedJavaHome = resolveCompatibleJavaHome();
 
-  if (resolvedJava17) {
-    env.JAVA_HOME = resolvedJava17;
-    env.PATH = `${path.join(resolvedJava17, 'bin')}${path.delimiter}${env.PATH ?? ''}`;
+  if (resolvedJavaHome) {
+    env.JAVA_HOME = resolvedJavaHome;
+    env.PATH = `${path.join(resolvedJavaHome, 'bin')}${path.delimiter}${env.PATH ?? ''}`;
     return env;
   }
 
@@ -74,9 +133,8 @@ function withPreferredJavaEnv(baseEnv) {
   const combined = `${current.stdout ?? ''}\n${current.stderr ?? ''}`;
   const currentMajor = parseJavaMajor(combined);
 
-  if (typeof currentMajor === 'number' && currentMajor >= 22) {
-    console.error('Local Android build requires Java 17 (or 21) for this Gradle/AGP setup.');
-    console.error(`Detected Java ${currentMajor}. Install Java 17 and set JAVA_HOME, then rerun.`);
+  if (typeof currentMajor === 'number' && currentMajor !== 17 && currentMajor !== 21) {
+    printJavaInstallHint(currentMajor);
     process.exit(1);
   }
 
