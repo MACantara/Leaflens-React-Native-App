@@ -32,6 +32,10 @@ cp .env.example .env
 
 Set EXPO_PUBLIC_API_BASE_URL in .env.
 
+Fallback behavior if EXPO_PUBLIC_API_BASE_URL is missing:
+- Development mode: falls back to http://localhost:8080
+- Release APK: falls back to https://leaflens-backend.up.railway.app
+
 For in-app update checks, also set:
 - EXPO_PUBLIC_GITHUB_OWNER=<github-owner>
 - EXPO_PUBLIC_GITHUB_REPO=<github-repo-name-or-url>

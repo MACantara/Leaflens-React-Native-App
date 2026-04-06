@@ -11,7 +11,10 @@ export class ApiError extends Error {
 }
 
 const maybeProcess = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
-const rawBaseUrl = maybeProcess?.env?.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+const DEFAULT_DEV_API_BASE_URL = 'http://localhost:8080';
+const DEFAULT_PROD_API_BASE_URL = 'https://leaflens-backend.up.railway.app';
+const fallbackBaseUrl = __DEV__ ? DEFAULT_DEV_API_BASE_URL : DEFAULT_PROD_API_BASE_URL;
+const rawBaseUrl = (maybeProcess?.env?.EXPO_PUBLIC_API_BASE_URL ?? '').trim() || fallbackBaseUrl;
 const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
 const REQUEST_TIMEOUT_MS = 12000;
 
