@@ -7,10 +7,11 @@ import { AuthScreen } from './src/screens/AuthScreen.tsx';
 import { AnalyzeScreen } from './src/screens/AnalyzeScreen.tsx';
 import { CollectionScreen } from './src/screens/CollectionScreen.tsx';
 import { HistoryScreen } from './src/screens/HistoryScreen.tsx';
+import { ExploreScreen } from './src/screens/ExploreScreen.tsx';
 import { AboutScreen } from './src/screens/AboutScreen.tsx';
 import { Session } from './src/types/models';
 
-type AppTab = 'home' | 'lens' | 'history' | 'about';
+type AppTab = 'home' | 'lens' | 'history' | 'explore' | 'about';
 
 interface MenuItem {
   key: AppTab | 'logout';
@@ -22,6 +23,7 @@ const menuItems: MenuItem[] = [
   { key: 'home', label: 'Your Collection', icon: 'home' },
   { key: 'lens', label: 'New Plant', icon: 'camera' },
   { key: 'history', label: 'Lens History', icon: 'list' },
+  { key: 'explore', label: 'Explore Leaves', icon: 'search' },
   { key: 'about', label: 'About Us', icon: 'info' },
   { key: 'logout', label: 'Log out', icon: 'log-out' }
 ];
@@ -37,6 +39,10 @@ function renderActiveTab(tab: AppTab, session: Session, onNewPlant: () => void):
 
   if (tab === 'history') {
     return <HistoryScreen session={session} />;
+  }
+
+  if (tab === 'explore') {
+    return <ExploreScreen session={session} />;
   }
 
   return <AboutScreen onNewPlant={onNewPlant} />;
@@ -116,7 +122,7 @@ export default function App(): React.JSX.Element {
           <Text style={styles.brandLine2}>{welcomeText}</Text>
         </View>
 
-        <Pressable style={styles.circleIconButton} onPress={() => setActiveTab('home')}>
+        <Pressable style={styles.circleIconButton} onPress={() => setActiveTab('explore')}>
           <Feather name="search" size={22} color="#1f2937" />
         </Pressable>
       </View>
