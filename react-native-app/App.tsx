@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { Modal, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthScreen } from './src/screens/AuthScreen.tsx';
 import { AnalyzeScreen } from './src/screens/AnalyzeScreen.tsx';
@@ -47,6 +47,7 @@ export default function App(): React.JSX.Element {
   const [menuVisible, setMenuVisible] = useState(false);
 
   const welcomeText = useMemo(() => (session ? session.userName : 'Guest'), [session]);
+  const headerTopPadding = Platform.OS === 'android' ? (NativeStatusBar.currentHeight ?? 0) + 8 : 8;
 
   function handleLogout(): void {
     setSession(undefined);
@@ -67,7 +68,7 @@ export default function App(): React.JSX.Element {
   if (!session) {
     return (
       <SafeAreaView style={styles.root}>
-        <StatusBar style="dark" />
+        <ExpoStatusBar style="dark" />
         <AuthScreen onAuthenticated={setSession} />
       </SafeAreaView>
     );
@@ -75,7 +76,7 @@ export default function App(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar style="dark" />
+      <ExpoStatusBar style="dark" />
 
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setMenuVisible(false)}>
@@ -91,7 +92,7 @@ export default function App(): React.JSX.Element {
         </Pressable>
       </Modal>
 
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: headerTopPadding }]}>
         <Pressable style={styles.circleIconButton} onPress={() => setMenuVisible(true)}>
           <Feather name="menu" size={24} color="#1f2937" />
         </Pressable>
@@ -131,7 +132,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ece1dd'
   },
   header: {
-    paddingTop: 8,
     paddingHorizontal: 16,
     paddingBottom: 10,
     flexDirection: 'row',
