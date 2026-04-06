@@ -3,13 +3,8 @@ import sharp from 'sharp';
 const MAX_WIDTH_1080P = 1920;
 const MAX_HEIGHT_1080P = 1080;
 
-type OutputFormat = 'jpeg' | 'png' | 'webp';
-
-interface ResolvedOutputFormat {
-  format: OutputFormat;
-  contentType: string;
-  extension: string;
-}
+const WEBP_CONTENT_TYPE = 'image/webp';
+const WEBP_EXTENSION = 'webp';
 
 export interface ProcessedImage {
   buffer: Buffer;
@@ -17,20 +12,6 @@ export interface ProcessedImage {
   filename: string;
   width: number;
   height: number;
-}
-
-function resolveOutputFormat(contentType: string): ResolvedOutputFormat {
-  const normalized = contentType.trim().toLowerCase();
-
-  if (normalized === 'image/png') {
-    return { format: 'png', contentType: 'image/png', extension: 'png' };
-  }
-
-  if (normalized === 'image/webp') {
-    return { format: 'webp', contentType: 'image/webp', extension: 'webp' };
-  }
-
-  return { format: 'jpeg', contentType: 'image/jpeg', extension: 'jpg' };
 }
 
 function replaceFilenameExtension(filename: string, extension: string): string {
@@ -47,7 +28,7 @@ function replaceFilenameExtension(filename: string, extension: string): string {
   return `${cleaned.slice(0, dotIndex)}.${extension}`;
 }
 
-async function resizeTo1080p(source: sharp.Sharp, output: ResolvedOutputFormat): Promise<{ data: Buffer; width: number; height: number }> {
+async function resizeTo1080pAsWebp(source: sharp.Sharp): Promise<{ data: Buffer; width: number; height: number }> {
   const pipeline = source.rotate().resize({
     width: MAX_WIDTH_1080P,
     height: MAX_HEIGHT_1080P,
@@ -55,17 +36,7 @@ async function resizeTo1080p(source: sharp.Sharp, output: ResolvedOutputFormat):
     withoutEnlargement: true
   });
 
-  if (output.format === 'png') {
-    const { data, info } = await pipeline.png({ compressionLevel: 9 }).toBuffer({ resolveWithObject: true });
-    return { data, width: info.width ?? 0, height: info.height ?? 0 };
-  }
-
-  if (output.format === 'webp') {
-    const { data, info } = await pipeline.webp({ quality: 86 }).toBuffer({ resolveWithObject: true });
-    return { data, width: info.width ?? 0, height: info.height ?? 0 };
-  }
-
-  const { data, info } = await pipeline.jpeg({ quality: 86, mozjpeg: true }).toBuffer({ resolveWithObject: true });
+  const { data, info } = await pipeline.webp({ quality: 86 }).toBuffer({ resolveWithObject: true });
   return { data, width: info.width ?? 0, height: info.height ?? 0 };
 }
 
@@ -74,13 +45,12 @@ export async function normalizeImageBufferTo1080p(params: {
   contentType: string;
   filename: string;
 }): Promise<ProcessedImage> {
-  const output = resolveOutputFormat(params.contentType);
-  const normalizedFilename = replaceFilenameExtension(params.filename, output.extension);
-  const resized = await resizeTo1080p(sharp(params.image), output);
+  const normalizedFilename = replaceFilenameExtension(params.filename, WEBP_EXTENSION);
+  const resized = await resizeTo1080pAsWebp(sharp(params.image));
 
   return {
     buffer: resized.data,
-    contentType: output.contentType,
+    contentType: WEBP_CONTENT_TYPE,
     filename: normalizedFilename,
     width: resized.width,
     height: resized.height
@@ -92,13 +62,12 @@ export async function normalizeImageFileTo1080p(params: {
   contentType: string;
   filename: string;
 }): Promise<ProcessedImage> {
-  const output = resolveOutputFormat(params.contentType);
-  const normalizedFilename = replaceFilenameExtension(params.filename, output.extension);
-  const resized = await resizeTo1080p(sharp(params.filePath), output);
+  const normalizedFilename = replaceFilenameExtension(params.filename, WEBP_EXTENSION);
+  const resized = await resizeTo1080pAsWebp(sharp(params.filePath));
 
   return {
     buffer: resized.data,
-    contentType: output.contentType,
+    contentType: WEBP_CONTENT_TYPE,
     filename: normalizedFilename,
     width: resized.width,
     height: resized.height

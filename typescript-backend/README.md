@@ -37,7 +37,7 @@ This folder contains the TypeScript/Node.js Leaflens backend API.
 - `npm run build`: Compile TypeScript into `dist/`
 - `npm run start`: Start compiled app from `dist/server.js`
 - `npm run typecheck`: Run TypeScript checks without emitting files
-- `npm run images:backfill-1080p`: Resize all bucket images to 1080p (uses temporary files and removes them automatically)
+- `npm run images:backfill-1080p`: Resize all bucket images to 1080p and convert to WebP (uses temporary files and removes them automatically)
 
 ## Local setup
 1. Copy `.env.example` to `.env` and fill values.
@@ -83,6 +83,6 @@ For full deployment steps, troubleshooting, and team onboarding notes, see:
 - [`docs/railway-deployment.md`](docs/railway-deployment.md)
 
 ## Notes
-- Uploads are normalized to a maximum of 1920x1080 before analysis/storage.
-- `images:backfill-1080p` updates existing bucket objects to 1080p and synchronizes Mongo image metadata.
+- Uploads are normalized to a maximum of 1920x1080 and converted to WebP before analysis/storage.
+- `images:backfill-1080p` updates existing bucket objects to 1080p + WebP and synchronizes Mongo image metadata.
 - Set `EXPO_PUBLIC_API_BASE_URL` in the React Native app to this backend URL.
