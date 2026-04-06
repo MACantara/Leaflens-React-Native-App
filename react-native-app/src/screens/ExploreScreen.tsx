@@ -71,21 +71,30 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
   return (
     <View style={styles.root}>
       <Text style={styles.title}>Explore Leaves</Text>
-      <Text style={styles.subtitle}>Search across stored leaves and save useful entries.</Text>
+      <Text style={styles.subtitle}>Search across known plants and save useful entries to your collection.</Text>
 
-      <View style={styles.searchRow}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search common or scientific name"
-          value={keyword}
-          onChangeText={setKeyword}
-        />
-        <Pressable style={styles.searchButton} onPress={loadExploreData}>
-          <Text style={styles.searchButtonLabel}>Search</Text>
-        </Pressable>
+      <View style={styles.searchCard}>
+        <Text style={styles.searchLabel}>Find a leaf</Text>
+
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Common or scientific name"
+            placeholderTextColor="#9ca3af"
+            value={keyword}
+            onChangeText={setKeyword}
+            returnKeyType="search"
+            onSubmitEditing={() => {
+              void loadExploreData();
+            }}
+          />
+          <Pressable style={[styles.searchButton, loading && styles.searchButtonDisabled]} onPress={loadExploreData} disabled={loading}>
+            <Text style={styles.searchButtonLabel}>{loading ? 'Searching...' : 'Search'}</Text>
+          </Pressable>
+        </View>
       </View>
 
-      {loading && <Text style={styles.helperText}>Loading...</Text>}
+      {loading && <Text style={styles.helperText}>Loading leaves...</Text>}
       {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
 
       <FlatList
@@ -95,11 +104,14 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.leafTitle}>{item.commonName || 'Unknown'}</Text>
-            <Text style={styles.leafMeta}>Scientific: {item.scientificName || 'N/A'}</Text>
-            <Text style={styles.leafMeta}>Uses: {item.usage || 'N/A'}</Text>
+            <Text style={styles.leafMetaLabel}>Scientific Name</Text>
+            <Text style={styles.leafMetaValue}>{item.scientificName || 'N/A'}</Text>
+
+            <Text style={styles.leafMetaLabel}>Uses</Text>
+            <Text style={styles.leafMetaValue}>{item.usage || 'N/A'}</Text>
 
             <Pressable
-              style={styles.saveButton}
+              style={[styles.saveButton, savingLeafId === item.leafId && styles.saveButtonDisabled]}
               onPress={() => onSaveLeaf(item.leafId)}
               disabled={savingLeafId === item.leafId}
             >
@@ -118,76 +130,124 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#f8fafc',
-    padding: 16,
+    backgroundColor: '#ece1dd',
+    paddingHorizontal: 20,
+    paddingTop: 12,
     gap: 10
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#0f172a'
+    color: '#111827'
   },
   subtitle: {
-    color: '#475569'
+    color: '#4b5563',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 4
+  },
+  searchCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 22,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 8,
+    shadowColor: '#000000',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 2
+  },
+  searchLabel: {
+    color: '#6b7280',
+    fontSize: 13,
+    fontWeight: '700',
+    paddingLeft: 2
   },
   searchRow: {
     flexDirection: 'row',
-    gap: 8
+    gap: 10
   },
   searchInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#ffffff'
+    borderColor: '#d1d5db',
+    borderRadius: 16,
+    minHeight: 50,
+    paddingHorizontal: 14,
+    backgroundColor: '#f8fafc',
+    color: '#111827'
   },
   searchButton: {
-    backgroundColor: '#1d4ed8',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    justifyContent: 'center'
+    backgroundColor: '#8bc34a',
+    borderRadius: 16,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14
+  },
+  searchButtonDisabled: {
+    backgroundColor: '#b4c694'
   },
   searchButtonLabel: {
-    color: '#ffffff',
+    color: '#0f172a',
+    fontSize: 14,
     fontWeight: '700'
   },
   listContent: {
-    gap: 10,
-    paddingBottom: 24
+    gap: 12,
+    paddingTop: 2,
+    paddingBottom: 22
   },
   card: {
     backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 12,
-    gap: 6
+    borderRadius: 20,
+    padding: 14,
+    gap: 4,
+    shadowColor: '#000000',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 2
   },
   leafTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a'
+    color: '#111827',
+    marginBottom: 6
   },
-  leafMeta: {
-    color: '#374151'
+  leafMetaLabel: {
+    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4
+  },
+  leafMetaValue: {
+    color: '#374151',
+    fontSize: 14,
+    lineHeight: 20
   },
   saveButton: {
-    marginTop: 4,
-    borderRadius: 10,
-    backgroundColor: '#0f766e',
+    marginTop: 10,
+    borderRadius: 14,
+    backgroundColor: '#8bc34a',
     alignItems: 'center',
-    paddingVertical: 10
+    paddingVertical: 12
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#b4c694'
   },
   saveButtonLabel: {
-    color: '#ffffff',
+    color: '#0f172a',
+    fontSize: 14,
     fontWeight: '700'
   },
   helperText: {
-    color: '#475569'
+    color: '#4b5563',
+    paddingHorizontal: 4
   },
   errorText: {
-    color: '#dc2626'
+    color: '#dc2626',
+    paddingHorizontal: 4
   }
 });
