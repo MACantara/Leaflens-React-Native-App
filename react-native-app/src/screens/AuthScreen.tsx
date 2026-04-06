@@ -68,35 +68,46 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
       </View>
 
       <View style={styles.card}>
+        <Text style={styles.formTitle}>{isLoginMode ? 'Login' : 'Register'}</Text>
+
         {mode === 'register' && (
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            placeholderTextColor="#b4b7bf"
-            value={userName}
-            onChangeText={setUserName}
-            autoCapitalize="none"
-          />
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Username</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Username"
+              placeholderTextColor="#b4b7bf"
+              value={userName}
+              onChangeText={setUserName}
+              autoCapitalize="none"
+            />
+          </View>
         )}
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#b4b7bf"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#b4b7bf"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#b4b7bf"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#b4b7bf"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+        </View>
 
         {error.length > 0 && (
           <View style={styles.errorBox}>
@@ -180,6 +191,21 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 7 },
     shadowRadius: 16,
     elevation: 8
+  },
+  formTitle: {
+    color: '#111827',
+    fontSize: 21,
+    fontWeight: '800',
+    marginBottom: 2
+  },
+  fieldGroup: {
+    gap: 6
+  },
+  fieldLabel: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '700',
+    paddingLeft: 4
   },
   input: {
     minHeight: 56,
