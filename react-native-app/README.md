@@ -90,6 +90,31 @@ The app is wired to these backend route groups:
 - Image upload uses multipart form data matching your backend field names:
   - analyze: image
   - analyze-save: leaf-image
+- Navigation and action icons are loaded from bundled icon fonts during app startup for release APK reliability.
+
+## Manual local APK build (fast debug loop)
+Build release APK locally:
+
+```bash
+npm run build:apk-local
+```
+
+Faster rebuild (keeps generated native project, skips clean):
+
+```bash
+npm run build:apk-local:fast
+```
+
+Fastest rebuild when only JS/TS code changed (no app.json/plugin changes):
+
+```bash
+npm run build:apk-local:gradle
+```
+
+Expected APK output:
+- android/app/build/outputs/apk/release/app-release.apk
+
+If you hit `Unsupported class file major version 69`, your machine is using a too-new Java runtime for the current Android Gradle pipeline. Install Java 17 and point JAVA_HOME to it.
 
 ## Android APK release automation
 The repository includes a GitHub Actions workflow that builds and uploads an APK to GitHub Releases when you push a version tag:
