@@ -63,15 +63,6 @@ function resolveCompatibleJavaHome() {
     '/usr/lib/jvm/temurin-17-jdk'
   ].filter(Boolean);
 
-  if (existsSync('/usr/lib/jvm')) {
-    try {
-      const entries = readFileSync('/usr/lib/jvm/.', 'utf8');
-      void entries;
-    } catch {
-      // no-op; path probing below still works with static candidates
-    }
-  }
-
   return candidates.find((candidate) => {
     const javaBin = path.join(candidate, 'bin', process.platform === 'win32' ? 'java.exe' : 'java');
     if (!existsSync(javaBin)) {
