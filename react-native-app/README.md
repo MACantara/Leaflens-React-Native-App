@@ -1,8 +1,8 @@
-# React Native MVP (TypeScript)
+# React Native App (TypeScript)
 
-This folder contains an MVP mobile app for Leaflens built with React Native + TypeScript (Expo).
+This folder contains the LeafLens mobile app built with React Native + TypeScript (Expo).
 
-## Included MVP features
+## Included features
 - Authentication: register, login, JWT session usage
 - Leaf analysis from image upload
 - Analyze and save to user collection
