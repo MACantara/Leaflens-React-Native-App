@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Leaflens MVP",
-    "slug": "leaflens-mvp",
+    "name": "LeafLens",
+    "slug": "leaflens",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
