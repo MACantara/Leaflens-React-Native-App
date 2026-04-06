@@ -116,6 +116,12 @@ Expected APK output:
 
 If you hit `Unsupported class file major version 69`, your machine is using a too-new Java runtime for the current Android Gradle pipeline. Install Java 17 and point JAVA_HOME to it.
 
+Fedora quick fix:
+
+```bash
+sudo dnf install java-21-openjdk-devel
+```
+
 ## Android APK release automation
 The repository includes a GitHub Actions workflow that builds and uploads an APK to GitHub Releases when you push a version tag:
 - Workflow: [../.github/workflows/android-apk-release.yml](../.github/workflows/android-apk-release.yml)
