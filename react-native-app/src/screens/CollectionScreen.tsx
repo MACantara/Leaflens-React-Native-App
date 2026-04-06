@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { getLeafImageUrl, getUserHistory } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
+
+const ROOT_HORIZONTAL_PADDING = 20;
+const CARD_HORIZONTAL_GAP = 16;
+const CARD_MAX_WIDTH = 332;
+const CARD_MIN_WIDTH = 260;
 
 interface CollectionScreenProps {
   session: Session;
@@ -24,6 +29,15 @@ export function CollectionScreen({ session }: CollectionScreenProps): React.JSX.
   const [selectedLeaf, setSelectedLeaf] = useState<LeafItem | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { width: viewportWidth } = useWindowDimensions();
+
+  const cardWidth = Math.max(
+    CARD_MIN_WIDTH,
+    Math.min(CARD_MAX_WIDTH, viewportWidth - ROOT_HORIZONTAL_PADDING * 2 - 2)
+  );
+  const cardImageHeight = Math.max(220, Math.min(340, Math.round(cardWidth * 1.02)));
+  const cardMinHeight = cardImageHeight + 140;
+  const snapInterval = cardWidth + CARD_HORIZONTAL_GAP;
 
   async function refreshCollection(): Promise<void> {
     setLoading(true);
@@ -80,13 +94,13 @@ export function CollectionScreen({ session }: CollectionScreenProps): React.JSX.
         horizontal
         snapToAlignment="start"
         decelerationRate="fast"
-        snapToInterval={348}
+        snapToInterval={snapInterval}
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => String(item.leafId)}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingRight: ROOT_HORIZONTAL_PADDING + 2 }]}
         renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => setSelectedLeaf(item)}>
-            <Image source={{ uri: getLeafImageUrl(item.leafId) }} style={styles.image} />
+          <Pressable style={[styles.card, { width: cardWidth, minHeight: cardMinHeight }]} onPress={() => setSelectedLeaf(item)}>
+            <Image source={{ uri: getLeafImageUrl(item.leafId) }} style={[styles.image, { height: cardImageHeight }]} />
             <Text style={styles.cardTitle}>{item.commonName || 'N/A'}</Text>
             <Text style={styles.cardMeta}>{item.scientificName || 'N/A'}</Text>
           </Pressable>
@@ -119,7 +133,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4
   },
   listContent: {
-    paddingRight: 22,
     gap: 16,
     paddingBottom: 10
   },
@@ -127,8 +140,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 24,
     padding: 14,
-    width: 332,
-    minHeight: 504,
     gap: 10,
     shadowColor: '#000000',
     shadowOpacity: 0.08,
@@ -138,7 +149,6 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 340,
     borderRadius: 20,
     backgroundColor: '#e2e8f0'
   },
