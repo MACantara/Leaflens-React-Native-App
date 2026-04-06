@@ -1,14 +1,14 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Modal, PanResponder, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
-import { AuthScreen } from './src/screens/AuthScreen.tsx';
-import { AnalyzeScreen } from './src/screens/AnalyzeScreen.tsx';
-import { CollectionScreen } from './src/screens/CollectionScreen.tsx';
-import { HistoryScreen } from './src/screens/HistoryScreen.tsx';
-import { ExploreScreen } from './src/screens/ExploreScreen.tsx';
-import { AboutScreen } from './src/screens/AboutScreen.tsx';
+import { AuthScreen } from './src/screens/AuthScreen';
+import { AnalyzeScreen } from './src/screens/AnalyzeScreen';
+import { CollectionScreen } from './src/screens/CollectionScreen';
+import { HistoryScreen } from './src/screens/HistoryScreen';
+import { ExploreScreen } from './src/screens/ExploreScreen';
+import { AboutScreen } from './src/screens/AboutScreen';
 import { Session } from './src/types/models';
 
 type AppTab = 'home' | 'lens' | 'history' | 'explore' | 'about';
@@ -29,6 +29,13 @@ const menuItems: MenuItem[] = [
 ];
 
 const GESTURE_COOLDOWN_MS = 700;
+const EDGE_START_X = 28;
+const NEAR_TOP_Y = 190;
+const INTENT_DX = 22;
+const INTENT_DY = 26;
+const TRIGGER_DX = 72;
+const TRIGGER_DY = 110;
+const AXIS_TOLERANCE = 44;
 
 function renderActiveTab(tab: AppTab, session: Session, onNewPlant: () => void, refreshVersion: number): React.JSX.Element {
   if (tab === 'home') {
@@ -62,7 +69,7 @@ export default function App(): React.JSX.Element {
     ...MaterialCommunityIcons.font
   });
 
-  const welcomeText = useMemo(() => (session ? session.userName : 'Guest'), [session]);
+  const welcomeText = session ? session.userName : 'Guest';
   const headerTopPadding = Platform.OS === 'android' ? (NativeStatusBar.currentHeight ?? 0) + 8 : 8;
 
   function handleLogout(): void {
@@ -81,7 +88,7 @@ export default function App(): React.JSX.Element {
     setMenuVisible(false);
   }
 
-  const canRunGesture = useCallback((): boolean => {
+  function canRunGesture(): boolean {
     const now = Date.now();
     if (now - lastGestureTimestampRef.current < GESTURE_COOLDOWN_MS) {
       return false;
@@ -89,68 +96,66 @@ export default function App(): React.JSX.Element {
 
     lastGestureTimestampRef.current = now;
     return true;
-  }, []);
+  }
 
-  const refreshActiveScreen = useCallback((): void => {
+  function refreshActiveScreen(): void {
     if (!canRunGesture()) {
       return;
     }
 
     setRefreshVersion((value) => value + 1);
-  }, [canRunGesture]);
+  }
 
-  const openMenuFromGesture = useCallback((): void => {
+  function openMenuFromGesture(): void {
     if (menuVisible || !canRunGesture()) {
       return;
     }
 
     setMenuVisible(true);
-  }, [menuVisible, canRunGesture]);
+  }
 
-  const closeMenuFromGesture = useCallback((): void => {
+  function closeMenuFromGesture(): void {
     if (!menuVisible || !canRunGesture()) {
       return;
     }
 
     setMenuVisible(false);
-  }, [menuVisible, canRunGesture]);
+  }
 
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_, gestureState) => {
-          const fromLeftEdge = gestureState.x0 <= 28;
-          const nearTop = gestureState.y0 <= 190;
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+      const fromLeftEdge = gestureState.x0 <= EDGE_START_X;
+      const nearTop = gestureState.y0 <= NEAR_TOP_Y;
 
-          const swipeRightIntent = fromLeftEdge && gestureState.dx > 18 && Math.abs(gestureState.dy) < 20;
-          const swipeLeftIntent = menuVisible && gestureState.dx < -18 && Math.abs(gestureState.dy) < 20;
-          const pullDownIntent = nearTop && gestureState.dy > 24 && Math.abs(gestureState.dx) < 18;
+      const swipeRightIntent = fromLeftEdge && gestureState.dx > INTENT_DX && Math.abs(gestureState.dy) < AXIS_TOLERANCE;
+      const swipeLeftIntent = menuVisible && gestureState.dx < -INTENT_DX && Math.abs(gestureState.dy) < AXIS_TOLERANCE;
+      const pullDownIntent = nearTop && gestureState.dy > INTENT_DY && Math.abs(gestureState.dx) < AXIS_TOLERANCE;
 
-          return swipeRightIntent || swipeLeftIntent || pullDownIntent;
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          const swipeRightFromEdge = gestureState.x0 <= 36 && gestureState.dx > 74 && Math.abs(gestureState.dy) < 42;
-          const swipeLeftToCloseMenu = menuVisible && gestureState.dx < -74 && Math.abs(gestureState.dy) < 42;
-          const pullDownToRefresh = gestureState.y0 <= 190 && gestureState.dy > 120 && Math.abs(gestureState.dx) < 64;
+      return swipeRightIntent || swipeLeftIntent || pullDownIntent;
+    },
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderRelease: (_, gestureState) => {
+      const swipeRightFromEdge = gestureState.x0 <= EDGE_START_X + 8 && gestureState.dx > TRIGGER_DX && Math.abs(gestureState.dy) < AXIS_TOLERANCE;
+      const swipeLeftToCloseMenu = menuVisible && gestureState.dx < -TRIGGER_DX && Math.abs(gestureState.dy) < AXIS_TOLERANCE;
+      const pullDownToRefresh = gestureState.y0 <= NEAR_TOP_Y && gestureState.dy > TRIGGER_DY && Math.abs(gestureState.dx) < 64;
 
-          if (swipeLeftToCloseMenu) {
-            closeMenuFromGesture();
-            return;
-          }
+      if (swipeLeftToCloseMenu) {
+        closeMenuFromGesture();
+        return;
+      }
 
-          if (swipeRightFromEdge) {
-            openMenuFromGesture();
-            return;
-          }
+      if (swipeRightFromEdge) {
+        openMenuFromGesture();
+        return;
+      }
 
-          if (pullDownToRefresh) {
-            refreshActiveScreen();
-          }
-        }
-      }),
-    [menuVisible, closeMenuFromGesture, openMenuFromGesture, refreshActiveScreen]
-  );
+      if (pullDownToRefresh) {
+        refreshActiveScreen();
+      }
+    }
+  });
 
   if (!iconsLoaded) {
     return (
@@ -170,7 +175,7 @@ export default function App(): React.JSX.Element {
   }
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} {...panResponder.panHandlers}>
       <ExpoStatusBar style="dark" />
 
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
@@ -202,7 +207,7 @@ export default function App(): React.JSX.Element {
         </Pressable>
       </View>
 
-      <View style={styles.content} {...panResponder.panHandlers}>
+      <View style={styles.content}>
         {renderActiveTab(activeTab, session, () => setActiveTab('lens'), refreshVersion)}
       </View>
 
