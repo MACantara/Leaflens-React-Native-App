@@ -133,12 +133,15 @@ export default function App(): React.JSX.Element {
         <View style={styles.bottomNav}>
           <Pressable style={[styles.navButton, activeTab === 'home' && styles.navButtonActive]} onPress={() => setActiveTab('home')}>
             <Ionicons name="home-outline" size={26} color={activeTab === 'home' ? '#111827' : '#6b7280'} />
+            <Text style={[styles.navLabel, activeTab === 'home' && styles.navLabelActive]}>Home</Text>
           </Pressable>
           <Pressable style={[styles.navButton, activeTab === 'lens' && styles.navButtonActive]} onPress={() => setActiveTab('lens')}>
             <MaterialCommunityIcons name="leaf" size={26} color={activeTab === 'lens' ? '#111827' : '#6b7280'} />
+            <Text style={[styles.navLabel, activeTab === 'lens' && styles.navLabelActive]}>Analyze</Text>
           </Pressable>
           <Pressable style={[styles.navButton, activeTab === 'history' && styles.navButtonActive]} onPress={() => setActiveTab('history')}>
             <Feather name="list" size={26} color={activeTab === 'history' ? '#111827' : '#6b7280'} />
+            <Text style={[styles.navLabel, activeTab === 'history' && styles.navLabelActive]}>History</Text>
           </Pressable>
         </View>
       </View>
@@ -185,26 +188,38 @@ const styles = StyleSheet.create({
     flex: 1
   },
   bottomNavWrap: {
-    paddingHorizontal: 20,
-    paddingVertical: 14
+    backgroundColor: '#f6f6f6',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    paddingBottom: 8
   },
   bottomNav: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#f6f6f6',
-    borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 10
+    justifyContent: 'space-between',
+    alignItems: 'stretch'
   },
   navButton: {
-    width: 62,
-    height: 46,
+    flex: 1,
+    minHeight: 58,
+    marginHorizontal: 4,
     borderRadius: 14,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    paddingVertical: 4,
+    gap: 2
   },
   navButtonActive: {
     backgroundColor: '#dfeedd'
+  },
+  navLabel: {
+    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  navLabelActive: {
+    color: '#111827'
   },
   modalBackdrop: {
     flex: 1,
