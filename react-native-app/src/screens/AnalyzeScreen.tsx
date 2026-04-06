@@ -95,27 +95,6 @@ export function AnalyzeScreen({ session }: AnalyzeScreenProps): React.JSX.Elemen
     handleImageSelection(capture.assets[0].uri);
   }
 
-  function openSourcePicker(): void {
-    Alert.alert('Select Image Source', 'Use your camera or choose from your photos.', [
-      {
-        text: 'Take Photo',
-        onPress: () => {
-          void openCamera();
-        }
-      },
-      {
-        text: 'Choose from Library',
-        onPress: () => {
-          void pickFromLibrary();
-        }
-      },
-      {
-        text: 'Cancel',
-        style: 'cancel'
-      }
-    ]);
-  }
-
   async function runAnalysis(): Promise<void> {
     if (!imageUri) {
       setError('Select an image first.');
@@ -154,9 +133,9 @@ export function AnalyzeScreen({ session }: AnalyzeScreenProps): React.JSX.Elemen
       </View>
 
       <View style={styles.controlRow}>
-        <Pressable style={styles.controlButton} onPress={openSourcePicker}>
-          <Feather name="refresh-cw" size={25} color="#f4f4f4" />
-          <Text style={styles.controlButtonLabel}>Source</Text>
+        <Pressable style={styles.controlButton} onPress={() => void pickFromLibrary()}>
+          <Feather name="upload" size={25} color="#f4f4f4" />
+          <Text style={styles.controlButtonLabel}>Upload</Text>
         </Pressable>
         <Pressable style={styles.captureButton} onPress={() => void openCamera()}>
           <View style={styles.captureCircle} />
