@@ -58,8 +58,10 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
 
   return (
     <View style={styles.root}>
-      <Text style={styles.heading}>Leaflens MVP</Text>
-      <Text style={styles.subheading}>Identify and manage medicinal leaves</Text>
+      <View style={styles.heroWrap}>
+        <Text style={styles.heading}>LeafLens</Text>
+        <Text style={styles.subheading}>Identify and manage medicinal leaves with your personal collection and history.</Text>
+      </View>
 
       <View style={styles.modeRow}>
         <Pressable style={[styles.modeButton, mode === 'login' && styles.modeButtonActive]} onPress={() => setMode('login')}>
@@ -75,11 +77,17 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{title}</Text>
+        <Text style={styles.cardCaption}>
+          {mode === 'login'
+            ? 'Sign in to access your saved leaves and history.'
+            : 'Create an account to start building your leaf collection.'}
+        </Text>
 
         {mode === 'register' && (
           <TextInput
             style={styles.input}
             placeholder="Username"
+            placeholderTextColor="#9ca3af"
             value={userName}
             onChangeText={setUserName}
             autoCapitalize="none"
@@ -89,6 +97,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
         <TextInput
           style={styles.input}
           placeholder="Email"
+          placeholderTextColor="#9ca3af"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -98,14 +107,19 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
         <TextInput
           style={styles.input}
           placeholder="Password"
+          placeholderTextColor="#9ca3af"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
-        {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+        {error.length > 0 && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
-        <Pressable style={styles.primaryButton} onPress={onSubmit} disabled={loading}>
+        <Pressable style={[styles.primaryButton, loading && styles.primaryButtonDisabled]} onPress={onSubmit} disabled={loading}>
           <Text style={styles.primaryButtonLabel}>{loading ? 'Please wait...' : title}</Text>
         </Pressable>
       </View>
@@ -117,74 +131,103 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
-    padding: 20,
+    backgroundColor: '#ece1dd',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     gap: 14
   },
+  heroWrap: {
+    gap: 4
+  },
   heading: {
-    fontSize: 30,
+    fontSize: 34,
     fontWeight: '800',
-    color: '#0f172a'
+    color: '#111827'
   },
   subheading: {
     fontSize: 15,
-    color: '#475569',
-    marginBottom: 6
+    color: '#4b5563',
+    lineHeight: 22,
+    marginBottom: 4
   },
   modeRow: {
     flexDirection: 'row',
-    borderRadius: 12,
-    overflow: 'hidden'
+    backgroundColor: '#d2dcc8',
+    borderRadius: 16,
+    padding: 4,
+    gap: 4
   },
   modeButton: {
     flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    backgroundColor: '#e2e8f0'
+    paddingVertical: 11,
+    borderRadius: 12,
+    alignItems: 'center'
   },
   modeButtonActive: {
-    backgroundColor: '#1d4ed8'
+    backgroundColor: '#ffffff'
   },
   modeLabel: {
-    color: '#1f2937',
+    color: '#475569',
     fontWeight: '700'
   },
   modeLabelActive: {
-    color: '#ffffff'
+    color: '#111827'
   },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 24,
+    padding: 18,
     gap: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0'
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 3
   },
   cardTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a'
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#111827'
+  },
+  cardCaption: {
+    color: '#64748b',
+    fontSize: 14,
+    marginBottom: 2
   },
   input: {
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
+    borderColor: '#d1d5db',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#f8fafc',
+    color: '#111827'
+  },
+  errorBox: {
+    backgroundColor: '#fee2e2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#0f172a'
+    paddingVertical: 9
   },
   errorText: {
-    color: '#dc2626'
+    color: '#b91c1c',
+    fontWeight: '600'
   },
   primaryButton: {
     marginTop: 6,
-    backgroundColor: '#1e3a8a',
-    paddingVertical: 12,
-    borderRadius: 10,
+    backgroundColor: '#8bc34a',
+    paddingVertical: 14,
+    borderRadius: 16,
     alignItems: 'center'
   },
+  primaryButtonDisabled: {
+    backgroundColor: '#b4c694'
+  },
   primaryButtonLabel: {
-    color: '#ffffff',
+    color: '#f3fff0',
+    fontSize: 16,
     fontWeight: '700'
   }
 });
