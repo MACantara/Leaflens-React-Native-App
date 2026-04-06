@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   Image,
@@ -11,6 +11,7 @@ import {
 import { exploreLeaves, getLeafImageUrl, saveExploreLeaf } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
+import { usePullToRefreshController } from '../utils/mobileGestures';
 
 interface ExploreScreenProps {
   session?: Session;
@@ -29,12 +30,11 @@ function errorToText(error: unknown): string {
 export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Element {
   const [keyword, setKeyword] = useState('');
   const [items, setItems] = useState<LeafItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savingLeafId, setSavingLeafId] = useState<number | undefined>();
+  const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
 
-  async function loadExploreData(): Promise<void> {
-    setLoading(true);
+  const loadExploreData = useCallback(async (): Promise<void> => {
     setError('');
 
     try {
@@ -42,10 +42,8 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
       setItems(results);
     } catch (loadError) {
       setError(errorToText(loadError));
-    } finally {
-      setLoading(false);
     }
-  }
+  }, [keyword]);
 
   async function onSaveLeaf(leafId: number): Promise<void> {
     if (!session) {
@@ -66,8 +64,8 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
   }
 
   useEffect(() => {
-    void loadExploreData();
-  }, []);
+    void runInitialLoad(loadExploreData);
+  }, [runInitialLoad, loadExploreData]);
 
   return (
     <View style={styles.root}>
@@ -86,10 +84,16 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
             onChangeText={setKeyword}
             returnKeyType="search"
             onSubmitEditing={() => {
-              void loadExploreData();
+              void runInitialLoad(loadExploreData);
             }}
           />
-          <Pressable style={[styles.searchButton, loading && styles.searchButtonDisabled]} onPress={loadExploreData} disabled={loading}>
+          <Pressable
+            style={[styles.searchButton, loading && styles.searchButtonDisabled]}
+            onPress={() => {
+              void runInitialLoad(loadExploreData);
+            }}
+            disabled={loading}
+          >
             <Text style={styles.searchButtonLabel}>{loading ? 'Searching...' : 'Search'}</Text>
           </Pressable>
         </View>
@@ -102,6 +106,10 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
         data={items}
         keyExtractor={(item) => String(item.leafId)}
         contentContainerStyle={styles.listContent}
+        onRefresh={() => {
+          void runPullToRefresh(loadExploreData);
+        }}
+        refreshing={refreshing}
         renderItem={({ item }) => (
           <View style={styles.card}>
             {item.imageFilename || item.imageContentType || item.imageSize ? (

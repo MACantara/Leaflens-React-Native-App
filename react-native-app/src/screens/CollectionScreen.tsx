@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { getLeafImageUrl, getUserHistory } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
+import { usePullToRefreshController } from '../utils/mobileGestures';
 
 const ROOT_HORIZONTAL_PADDING = 20;
 const CARD_HORIZONTAL_GAP = 16;
@@ -27,9 +28,9 @@ function toErrorText(error: unknown): string {
 export function CollectionScreen({ session }: CollectionScreenProps): React.JSX.Element {
   const [leafList, setLeafList] = useState<LeafItem[]>([]);
   const [selectedLeaf, setSelectedLeaf] = useState<LeafItem | undefined>();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { width: viewportWidth } = useWindowDimensions();
+  const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
 
   const cardWidth = Math.max(
     CARD_MIN_WIDTH,
@@ -39,8 +40,7 @@ export function CollectionScreen({ session }: CollectionScreenProps): React.JSX.
   const cardMinHeight = cardImageHeight + 140;
   const snapInterval = cardWidth + CARD_HORIZONTAL_GAP;
 
-  async function refreshCollection(): Promise<void> {
-    setLoading(true);
+  const refreshCollection = useCallback(async (): Promise<void> => {
     setError('');
 
     try {
@@ -48,14 +48,12 @@ export function CollectionScreen({ session }: CollectionScreenProps): React.JSX.
       setLeafList(history.leafList ?? []);
     } catch (refreshError) {
       setError(toErrorText(refreshError));
-    } finally {
-      setLoading(false);
     }
-  }
+  }, [session.token, session.userId]);
 
   useEffect(() => {
-    void refreshCollection();
-  }, []);
+    void runInitialLoad(refreshCollection);
+  }, [runInitialLoad, refreshCollection]);
 
   if (selectedLeaf) {
     return (
@@ -98,6 +96,10 @@ export function CollectionScreen({ session }: CollectionScreenProps): React.JSX.
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => String(item.leafId)}
         contentContainerStyle={[styles.listContent, { paddingRight: ROOT_HORIZONTAL_PADDING + 2 }]}
+        onRefresh={() => {
+          void runPullToRefresh(refreshCollection);
+        }}
+        refreshing={refreshing}
         renderItem={({ item }) => (
           <Pressable style={[styles.card, { width: cardWidth, minHeight: cardMinHeight }]} onPress={() => setSelectedLeaf(item)}>
             <Image source={{ uri: getLeafImageUrl(item.leafId) }} style={[styles.image, { height: cardImageHeight }]} />

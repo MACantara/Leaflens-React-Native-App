@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { getUserHistory } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
+import { usePullToRefreshController } from '../utils/mobileGestures';
 
 interface HistoryScreenProps {
   session: Session;
@@ -20,26 +21,23 @@ function toErrorText(error: unknown): string {
 
 export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Element {
   const [history, setHistory] = useState<LeafItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
+
+  const loadHistory = useCallback(async (): Promise<void> => {
+    setError('');
+
+    try {
+      const response = await getUserHistory(session.userId, session.token);
+      setHistory(response.leafList ?? []);
+    } catch (historyError) {
+      setError(toErrorText(historyError));
+    }
+  }, [session.token, session.userId]);
 
   useEffect(() => {
-    async function loadHistory(): Promise<void> {
-      setLoading(true);
-      setError('');
-
-      try {
-        const response = await getUserHistory(session.userId, session.token);
-        setHistory(response.leafList ?? []);
-      } catch (historyError) {
-        setError(toErrorText(historyError));
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void loadHistory();
-  }, [session.token, session.userId]);
+    void runInitialLoad(loadHistory);
+  }, [runInitialLoad, loadHistory]);
 
   return (
     <View style={styles.root}>
@@ -51,6 +49,10 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
         data={history}
         keyExtractor={(item) => String(item.leafId)}
         contentContainerStyle={styles.listContent}
+        onRefresh={() => {
+          void runPullToRefresh(loadHistory);
+        }}
+        refreshing={refreshing}
         renderItem={({ item }) => (
           <View style={styles.itemPill}>
             <Text style={styles.itemText}>{item.commonName || 'Cannot identify plant from image'}</Text>

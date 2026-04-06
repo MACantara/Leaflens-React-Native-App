@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Modal, PanResponder, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
@@ -10,6 +10,7 @@ import { HistoryScreen } from './src/screens/HistoryScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { Session } from './src/types/models';
+import { createEdgeMenuPanResponder } from './src/utils/mobileGestures';
 
 type AppTab = 'home' | 'lens' | 'history' | 'explore' | 'about';
 
@@ -29,39 +30,31 @@ const menuItems: MenuItem[] = [
 ];
 
 const GESTURE_COOLDOWN_MS = 700;
-const EDGE_START_X = 28;
-const NEAR_TOP_Y = 190;
-const INTENT_DX = 22;
-const INTENT_DY = 26;
-const TRIGGER_DX = 72;
-const TRIGGER_DY = 110;
-const AXIS_TOLERANCE = 44;
 
-function renderActiveTab(tab: AppTab, session: Session, onNewPlant: () => void, refreshVersion: number): React.JSX.Element {
+function renderActiveTab(tab: AppTab, session: Session, onNewPlant: () => void): React.JSX.Element {
   if (tab === 'home') {
-    return <CollectionScreen key={`home-${refreshVersion}`} session={session} />;
+    return <CollectionScreen session={session} />;
   }
 
   if (tab === 'lens') {
-    return <AnalyzeScreen key={`lens-${refreshVersion}`} session={session} />;
+    return <AnalyzeScreen session={session} />;
   }
 
   if (tab === 'history') {
-    return <HistoryScreen key={`history-${refreshVersion}`} session={session} />;
+    return <HistoryScreen session={session} />;
   }
 
   if (tab === 'explore') {
-    return <ExploreScreen key={`explore-${refreshVersion}`} session={session} />;
+    return <ExploreScreen session={session} />;
   }
 
-  return <AboutScreen key={`about-${refreshVersion}`} onNewPlant={onNewPlant} />;
+  return <AboutScreen onNewPlant={onNewPlant} />;
 }
 
 export default function App(): React.JSX.Element {
   const [session, setSession] = useState<Session | undefined>();
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [menuVisible, setMenuVisible] = useState(false);
-  const [refreshVersion, setRefreshVersion] = useState(0);
   const lastGestureTimestampRef = useRef(0);
   const [iconsLoaded] = useFonts({
     ...Feather.font,
@@ -98,14 +91,6 @@ export default function App(): React.JSX.Element {
     return true;
   }
 
-  function refreshActiveScreen(): void {
-    if (!canRunGesture()) {
-      return;
-    }
-
-    setRefreshVersion((value) => value + 1);
-  }
-
   function openMenuFromGesture(): void {
     if (menuVisible || !canRunGesture()) {
       return;
@@ -122,39 +107,10 @@ export default function App(): React.JSX.Element {
     setMenuVisible(false);
   }
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => false,
-    onMoveShouldSetPanResponder: () => false,
-    onMoveShouldSetPanResponderCapture: (_, gestureState) => {
-      const fromLeftEdge = gestureState.x0 <= EDGE_START_X;
-      const nearTop = gestureState.y0 <= NEAR_TOP_Y;
-
-      const swipeRightIntent = fromLeftEdge && gestureState.dx > INTENT_DX && Math.abs(gestureState.dy) < AXIS_TOLERANCE;
-      const swipeLeftIntent = menuVisible && gestureState.dx < -INTENT_DX && Math.abs(gestureState.dy) < AXIS_TOLERANCE;
-      const pullDownIntent = nearTop && gestureState.dy > INTENT_DY && Math.abs(gestureState.dx) < AXIS_TOLERANCE;
-
-      return swipeRightIntent || swipeLeftIntent || pullDownIntent;
-    },
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderRelease: (_, gestureState) => {
-      const swipeRightFromEdge = gestureState.x0 <= EDGE_START_X + 8 && gestureState.dx > TRIGGER_DX && Math.abs(gestureState.dy) < AXIS_TOLERANCE;
-      const swipeLeftToCloseMenu = menuVisible && gestureState.dx < -TRIGGER_DX && Math.abs(gestureState.dy) < AXIS_TOLERANCE;
-      const pullDownToRefresh = gestureState.y0 <= NEAR_TOP_Y && gestureState.dy > TRIGGER_DY && Math.abs(gestureState.dx) < 64;
-
-      if (swipeLeftToCloseMenu) {
-        closeMenuFromGesture();
-        return;
-      }
-
-      if (swipeRightFromEdge) {
-        openMenuFromGesture();
-        return;
-      }
-
-      if (pullDownToRefresh) {
-        refreshActiveScreen();
-      }
-    }
+  const panResponder = createEdgeMenuPanResponder({
+    menuVisible,
+    onOpenMenu: openMenuFromGesture,
+    onCloseMenu: closeMenuFromGesture
   });
 
   if (!iconsLoaded) {
@@ -208,7 +164,7 @@ export default function App(): React.JSX.Element {
       </View>
 
       <View style={styles.content}>
-        {renderActiveTab(activeTab, session, () => setActiveTab('lens'), refreshVersion)}
+        {renderActiveTab(activeTab, session, () => setActiveTab('lens'))}
       </View>
 
       <View style={styles.bottomNavWrap}>
