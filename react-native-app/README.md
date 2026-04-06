@@ -34,7 +34,7 @@ Set EXPO_PUBLIC_API_BASE_URL in .env.
 
 For in-app update checks, also set:
 - EXPO_PUBLIC_GITHUB_OWNER=<github-owner>
-- EXPO_PUBLIC_GITHUB_REPO=<github-repo>
+- EXPO_PUBLIC_GITHUB_REPO=<github-repo-name-or-url>
 
 Examples:
 - Android emulator: http://10.0.2.2:8080
@@ -91,6 +91,10 @@ The app is wired to these backend route groups:
 The repository includes a GitHub Actions workflow that builds and uploads an APK to GitHub Releases when you push a version tag:
 - Workflow: [../.github/workflows/android-apk-release.yml](../.github/workflows/android-apk-release.yml)
 - Trigger format: vMAJOR.MINOR.PATCH (example: v1.2.3)
+
+Important for release builds:
+- Set repository variable EXPO_PUBLIC_API_BASE_URL to your deployed backend URL.
+- If omitted, workflow falls back to https://leaflens-backend.up.railway.app.
 
 Release flow:
 1. Bump app changes in source.
