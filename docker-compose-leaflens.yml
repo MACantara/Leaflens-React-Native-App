@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    image: leaflens-app:latest
+    container_name: leaflens-app
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./${ENV:-prod}.env
+    restart: unless-stopped
+
+
+

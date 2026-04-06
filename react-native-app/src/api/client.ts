@@ -1,0 +1,115 @@
+export class ApiError extends Error {
+  status: number;
+  payload: unknown;
+
+  constructor(message: string, status: number, payload: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
+const maybeProcess = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
+const rawBaseUrl = maybeProcess?.env?.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+const REQUEST_TIMEOUT_MS = 12000;
+
+type RequestOptions = RequestInit & {
+  token?: string;
+  isFormData?: boolean;
+};
+
+function isJsonResponse(contentType: string | null): boolean {
+  return Boolean(contentType && contentType.toLowerCase().includes('application/json'));
+}
+
+async function parseResponseBody(response: Response): Promise<unknown> {
+  const contentType = response.headers.get('content-type');
+  if (isJsonResponse(contentType)) {
+    return response.json();
+  }
+  return response.text();
+}
+
+export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { token, isFormData = false, headers, ...rest } = options;
+
+  const resolvedHeaders: Record<string, string> = {
+    Accept: 'application/json',
+    ...(headers as Record<string, string> | undefined)
+  };
+
+  if (!isFormData && rest.body) {
+    resolvedHeaders['Content-Type'] = 'application/json';
+  }
+
+  if (token) {
+    resolvedHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...rest,
+      headers: resolvedHeaders,
+      signal: controller.signal
+    });
+  } catch (fetchError) {
+    const isLocalHostBaseUrl = API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1');
+    const networkHelp = isLocalHostBaseUrl
+      ? `Cannot reach ${API_BASE_URL}. On a physical phone, localhost points to the phone. Set EXPO_PUBLIC_API_BASE_URL to your computer LAN IP (for example http://192.168.x.x:8080), restart Expo, and ensure backend is running.`
+      : `Cannot reach ${API_BASE_URL}. Ensure backend is running and phone and computer are on the same Wi-Fi network.`;
+
+    if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+      throw new ApiError(`${networkHelp} Request timed out after ${REQUEST_TIMEOUT_MS / 1000} seconds.`, 0, {
+        cause: fetchError.message
+      });
+    }
+
+    throw new ApiError(networkHelp, 0, fetchError);
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const payload = await parseResponseBody(response);
+
+  if (!response.ok) {
+    const fallbackMessage = typeof payload === 'string' ? payload : `Request failed with status ${response.status}`;
+    throw new ApiError(fallbackMessage, response.status, payload);
+  }
+
+  return payload as T;
+}
+
+export function buildQuery(params: Record<string, string | number | Array<string> | undefined>): string {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === '') {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item !== '') {
+          searchParams.append(key, item);
+        }
+      });
+      return;
+    }
+
+    searchParams.append(key, String(value));
+  });
+
+  const query = searchParams.toString();
+  return query ? `?${query}` : '';
+}
+
+export function getApiBaseUrl(): string {
+  return API_BASE_URL;
+}

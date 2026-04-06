@@ -1,0 +1,30 @@
+{
+  "name": "react-native-app",
+  "version": "0.1.0",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "start:dev": "expo start --clear",
+    "android": "expo start --android",
+    "android:check": "powershell -ExecutionPolicy Bypass -File ./scripts/check-android-setup.ps1",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^14.1.0",
+    "expo": "~53.0.11",
+    "expo-asset": "~11.1.7",
+    "expo-font": "~13.3.2",
+    "expo-image-picker": "~16.1.4",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-native": "0.79.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~19.0.10",
+    "typescript": "~5.8.3"
+  }
+}
