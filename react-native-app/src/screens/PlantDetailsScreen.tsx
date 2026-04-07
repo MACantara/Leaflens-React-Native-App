@@ -171,9 +171,9 @@ export function PlantDetailsScreen({
           {selectedLeafMedicalConditions.length > 0 ? (
             <View style={styles.tagWrap}>
               {selectedLeafMedicalConditions.map((condition) => (
-                <View key={condition} style={styles.conditionPill}>
+                <Pressable key={condition} style={styles.conditionPill} onPress={() => onExploreTag?.(condition)}>
                   <Text style={styles.conditionText}>{condition}</Text>
-                </View>
+                </Pressable>
               ))}
             </View>
           ) : (

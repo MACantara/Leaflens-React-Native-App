@@ -104,10 +104,10 @@ export function ExploreScreen({
       return;
     }
 
-    setKeyword('');
-    setSelectedTags([normalized]);
+    setKeyword(normalized);
+    setSelectedTags([]);
     void runInitialLoad(async () => {
-      await fetchExplore('', [normalized]);
+      await fetchExplore(normalized, []);
     });
   }, [fetchExplore, preselectedTag, preselectedTagVersion, runInitialLoad]);
 

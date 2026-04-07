@@ -129,7 +129,7 @@ export default function App(): React.JSX.Element {
   const [exploreSearchTags, setExploreSearchTags] = useState<string[]>([]);
   const [exploreSearchVersion, setExploreSearchVersion] = useState(0);
   const [explorePrefillTag, setExplorePrefillTag] = useState<string | undefined>();
-  const [explorePrefillVersion, setExplorePrefillVersion] = useState(0);
+  const [explorePrefillVersion] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
   const lastGestureTimestampRef = useRef(0);
   const [iconsLoaded, iconsLoadError] = useFonts({
@@ -181,8 +181,10 @@ export default function App(): React.JSX.Element {
       return;
     }
 
-    setExplorePrefillTag(normalized);
-    setExplorePrefillVersion((value) => value + 1);
+    setExplorePrefillTag(undefined);
+    setExploreSearchKeyword(normalized);
+    setExploreSearchTags([]);
+    setExploreSearchVersion((value) => value + 1);
     setActiveTab('explore');
     setGlobalSearchVisible(false);
     setMenuVisible(false);
