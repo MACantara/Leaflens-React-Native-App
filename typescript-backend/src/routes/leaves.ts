@@ -5,28 +5,36 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ensureUserCollection } from '../utils/collection.js';
 import { HttpError } from '../utils/errors.js';
 import { toLeafDto } from '../utils/leafMapper.js';
-import { toCaseInsensitiveRegex } from '../utils/query.js';
+import { toCaseInsensitiveRegex, toTagArray } from '../utils/query.js';
 
 export const leavesRouter = Router();
 
 leavesRouter.get(
   '/explore',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const keyword = toCaseInsensitiveRegex(req.query.keyword);
+    const tags = toTagArray(req.query.tag);
     const dbCollections = await collections();
 
-    const filter =
-      keyword !== null
-        ? {
-            $or: [
-              { commonName: keyword },
-              { scientificName: keyword },
-              { origin: keyword },
-              { usage: keyword },
-              { habitat: keyword }
-            ]
-          }
-        : {};
+    const filter: {
+      $or?: Array<Record<string, RegExp>>;
+      tags?: { $in: string[] };
+    } = {};
+
+    if (keyword !== null) {
+      filter.$or = [
+        { commonName: keyword },
+        { scientificName: keyword },
+        { origin: keyword },
+        { usage: keyword },
+        { habitat: keyword }
+      ];
+    }
+
+    if (tags.length > 0) {
+      filter.tags = { $in: tags };
+    }
 
     const result = await dbCollections.leaves.find(filter).sort({ leafId: -1 }).toArray();
 
