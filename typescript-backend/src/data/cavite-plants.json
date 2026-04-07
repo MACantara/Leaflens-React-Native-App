@@ -1,0 +1,256 @@
+{
+  "generatedAt": "2026-04-07T04:50:32.288Z",
+  "count": 50,
+  "plants": [
+    {
+      "commonName": "Narra",
+      "scientificName": "Pterocarpus indicus",
+      "description": "The Narra tree is a tall, sturdy hardwood with golden-yellow flowers that bloom in clusters. It grows abundantly in Cavite’s lowland forests and along roadsides. Its wood is prized for furniture making and symbolizes strength and resilience in Filipino culture."
+    },
+    {
+      "commonName": "Mahogany",
+      "scientificName": "Swietenia macrophylla",
+      "description": "Mahogany trees have reddish-brown trunks and compound leaves that form wide canopies. They are commonly planted in Cavite’s urban and rural areas for shade and reforestation. Its timber is highly valued for construction and cabinetry."
+    },
+    {
+      "commonName": "Acacia",
+      "scientificName": "Samanea saman",
+      "description": "Acacia trees feature a wide, umbrella-like canopy with feathery leaves. They are widespread in Cavite’s open fields and school grounds. The tree provides excellent shade and helps prevent soil erosion."
+    },
+    {
+      "commonName": "Mango",
+      "scientificName": "Mangifera indica",
+      "description": "Mango trees are large evergreens with glossy leaves and fragrant yellowish-white flowers. They thrive in Cavite’s warm, dry climate and are often seen in backyards. The fruit is a beloved local delicacy and a major source of income for farmers."
+    },
+    {
+      "commonName": "Banana",
+      "scientificName": "Musa acuminata",
+      "description": "Banana plants are tall herbs with broad leaves and hanging clusters of fruit. They grow well in Cavite’s moist soil and humid environment. Bananas are a staple food and used in many Filipino dishes and desserts."
+    },
+    {
+      "commonName": "Guava",
+      "scientificName": "Psidium guajava",
+      "description": "Guava trees have smooth bark, oval leaves, and round green fruits rich in vitamin C. They are often cultivated in Cavite’s home gardens. The fruit and leaves are used for food and traditional medicine."
+    },
+    {
+      "commonName": "Santan",
+      "scientificName": "Ixora coccinea",
+      "description": "Santan is a small ornamental shrub with clusters of bright red or orange flowers. It decorates many gardens and schoolyards in Cavite. The plant is also used in folk medicine and attracts butterflies."
+    },
+    {
+      "commonName": "Bougainvillea",
+      "scientificName": "Bougainvillea glabra",
+      "description": "Bougainvillea is a thorny vine with papery pink or purple bracts. It thrives in Cavite’s sunny climate and is often grown on fences and walls. The plant adds vibrant color to many homes and public spaces."
+    },
+    {
+      "commonName": "Camia",
+      "scientificName": "Hedychium coronarium",
+      "description": "Camia is a fragrant white flowering plant with lush green leaves. It grows in shaded gardens and moist soils across Cavite. The flowers are used in leis and local festivities."
+    },
+    {
+      "commonName": "Rosal",
+      "scientificName": "Gardenia jasminoides",
+      "description": "Rosal is a bushy shrub with glossy leaves and creamy white, aromatic flowers. It is a favorite ornamental plant in Cavite households. Its beauty symbolizes purity and affection."
+    },
+    {
+      "commonName": "Calachuchi",
+      "scientificName": "Plumeria rubra",
+      "description": "Calachuchi trees have thick branches and fragrant, waxy flowers. They grow well in Cavite’s dry soil and are common near churches and cemeteries. The plant is associated with beauty and remembrance."
+    },
+    {
+      "commonName": "Langka",
+      "scientificName": "Artocarpus heterophyllus",
+      "description": "Langka, or jackfruit, is a large tree with leathery leaves and huge green fruits. It is widely grown in Cavite’s rural areas. The fruit, seeds, and wood are all useful for food and carpentry."
+    },
+    {
+      "commonName": "Atis",
+      "scientificName": "Annona squamosa",
+      "description": "Atis trees are small and bear scaly, sweet fruits. They thrive in Cavite’s warm climate and well-drained soil. The fruit is rich in nutrients and commonly eaten fresh."
+    },
+    {
+      "commonName": "Papaya",
+      "scientificName": "Carica papaya",
+      "description": "Papaya is a fast-growing plant with a single trunk and large lobed leaves. It grows in many Cavite gardens and farms. Its fruit is used for food, and its latex is valued in traditional medicine."
+    },
+    {
+      "commonName": "Coconut",
+      "scientificName": "Cocos nucifera",
+      "description": "Coconut palms have tall, slender trunks and feathery leaves. They are found in coastal areas of Cavite. Every part of the tree — from fruit to husk — is used in food, oil, and crafts."
+    },
+    {
+      "commonName": "Talisay",
+      "scientificName": "Terminalia catappa",
+      "description": "Talisay trees have broad leaves that turn red before falling. They are common in Cavite’s beaches and parks. The nuts are edible, and the leaves are used for natural dye."
+    },
+    {
+      "commonName": "Molave",
+      "scientificName": "Vitex parviflora",
+      "description": "Molave trees are medium-sized with hard, durable wood. They grow in Cavite’s dry upland forests. The timber is used in construction and symbolizes endurance."
+    },
+    {
+      "commonName": "Dapdap",
+      "scientificName": "Erythrina variegata",
+      "description": "Dapdap trees have red-orange flowers and thorny branches. They are planted in Cavite as ornamental and shade trees. The flowers are believed to bring good luck."
+    },
+    {
+      "commonName": "Ipil-ipil",
+      "scientificName": "Leucaena leucocephala",
+      "description": "Ipil-ipil is a fast-growing tree with small, rounded leaves. It is used in Cavite as animal fodder and soil fertilizer. The plant helps restore soil fertility."
+    },
+    {
+      "commonName": "Banaba",
+      "scientificName": "Lagerstroemia speciosa",
+      "description": "Banaba is a flowering tree with vibrant purple blossoms. It grows along Cavite’s roadsides and gardens. The leaves are used as herbal medicine for diabetes."
+    },
+    {
+      "commonName": "Tsaang Gubat",
+      "scientificName": "Carmona retusa",
+      "description": "Tsaang Gubat is a woody shrub with small, glossy leaves. It thrives in Cavite’s semi-shaded areas. The leaves are brewed as tea for stomach ailments."
+    },
+    {
+      "commonName": "Makahiya",
+      "scientificName": "Mimosa pudica",
+      "description": "Makahiya is a low-lying herb whose leaves fold when touched. It grows wildly in Cavite’s grassy fields. It is admired for its unique movement and used in herbal remedies."
+    },
+    {
+      "commonName": "Adelfa",
+      "scientificName": "Nerium oleander",
+      "description": "Adelfa is a tall shrub with clusters of pink or white flowers. It grows well in Cavite’s sunny areas. Despite its beauty, it is toxic and should be handled carefully."
+    },
+    {
+      "commonName": "Kamuning",
+      "scientificName": "Murraya paniculata",
+      "description": "Kamuning is a small, fragrant shrub with white flowers. It is commonly used as a hedge or ornamental plant in Cavite. Its wood is also used for small carvings."
+    },
+    {
+      "commonName": "Lagundi",
+      "scientificName": "Vitex negundo",
+      "description": "Lagundi is a medicinal shrub with green leaves and violet flowers. It is widely grown in Cavite’s gardens and farms. The leaves are known for treating coughs and colds."
+    },
+    {
+      "commonName": "Balete",
+      "scientificName": "Ficus benjamina",
+      "description": "Balete is a large tree with hanging aerial roots. It is often seen in old Cavite towns and parks. Locals associate it with folklore and spirits."
+    },
+    {
+      "commonName": "Ipil",
+      "scientificName": "Intsia bijuga",
+      "description": "Ipil trees have dark bark and dense foliage. They grow in Cavite’s forested areas. The wood is durable and used in shipbuilding."
+    },
+    {
+      "commonName": "Bamboo",
+      "scientificName": "Bambusoideae",
+      "description": "Bamboo is a tall, hollow-stemmed grass that grows in clusters. It thrives in Cavite’s riversides and farms. It’s used for housing, tools, and crafts."
+    },
+    {
+      "commonName": "Rosas",
+      "scientificName": "Rosa spp.",
+      "description": "Roses are thorny shrubs with fragrant, colorful blooms. They flourish in Cavite’s cool highlands like Tagaytay. They symbolize love and are used in perfumes."
+    },
+    {
+      "commonName": "Anahaw",
+      "scientificName": "Livistona rotundifolia",
+      "description": "Anahaw palms have fan-shaped leaves and slender trunks. They are common in Cavite’s ornamental gardens. The leaves are used for roofing and decoration."
+    },
+    {
+      "commonName": "Tuba-tuba",
+      "scientificName": "Jatropha curcas",
+      "description": "Tuba-tuba is a shrub with large green leaves and small flowers. It grows in Cavite’s dry lands. Its seeds can be processed into biodiesel."
+    },
+    {
+      "commonName": "Lemon Grass",
+      "scientificName": "Cymbopogon citratus",
+      "description": "Lemongrass is a tall, aromatic grass with thin, sharp leaves. It grows well in Cavite’s gardens and farms. The plant is used for cooking and herbal tea."
+    },
+    {
+      "commonName": "Saging na Saba",
+      "scientificName": "Musa balbisiana",
+      "description": "Saba banana plants have large leaves and upright fruit bunches. They are widely cultivated in Cavite for snacks like banana cue and turon. Their leaves are used for wrapping food."
+    },
+    {
+      "commonName": "Kalamansi",
+      "scientificName": "Citrus microcarpa",
+      "description": "Kalamansi trees are small with dark green leaves and round fruits. They are common in Cavite backyards. The fruits are used in sauces, drinks, and cleaning."
+    },
+    {
+      "commonName": "Okra",
+      "scientificName": "Abelmoschus esculentus",
+      "description": "Okra plants have yellow flowers and green pods. They are often grown in Cavite’s vegetable gardens. The pods are used in soups and stews."
+    },
+    {
+      "commonName": "Malunggay",
+      "scientificName": "Moringa oleifera",
+      "description": "Malunggay is a small tree with round leaves and white flowers. It grows easily in Cavite’s climate. The leaves are rich in vitamins and used in dishes and herbal medicine."
+    },
+    {
+      "commonName": "Talong",
+      "scientificName": "Solanum melongena",
+      "description": "Talong, or eggplant, is a soft-stemmed plant with purple fruits. It thrives in Cavite’s fertile soil. It’s a staple ingredient in many Filipino dishes."
+    },
+    {
+      "commonName": "Ampalaya",
+      "scientificName": "Momordica charantia",
+      "description": "Ampalaya is a climbing vine with lobed leaves and bitter fruits. It grows in Cavite’s gardens and fences. The fruit is valued for its health benefits."
+    },
+    {
+      "commonName": "Pechay",
+      "scientificName": "Brassica rapa",
+      "description": "Pechay is a leafy vegetable with smooth green leaves. It grows well in Cavite’s cool areas. It’s used in soups and stir-fried dishes."
+    },
+    {
+      "commonName": "Sitaw",
+      "scientificName": "Vigna unguiculata sesquipedalis",
+      "description": "Sitaw is a climbing plant with long green pods. It’s widely cultivated in Cavite’s vegetable farms. It’s a key ingredient in Filipino dishes like adobong sitaw."
+    },
+    {
+      "commonName": "Kangkong",
+      "scientificName": "Ipomoea aquatica",
+      "description": "Kangkong is an aquatic vegetable with hollow stems and pointed leaves. It grows in Cavite’s water channels and ponds. It’s used in popular dishes like sinigang."
+    },
+    {
+      "commonName": "Mustasa",
+      "scientificName": "Brassica juncea",
+      "description": "Mustasa, or mustard greens, have broad leaves and a spicy flavor. It thrives in Cavite’s highlands. It’s commonly pickled or cooked as side dishes."
+    },
+    {
+      "commonName": "Alugbati",
+      "scientificName": "Basella alba",
+      "description": "Alugbati is a climbing vine with fleshy green leaves. It grows abundantly in Cavite’s warm areas. It’s rich in iron and used in healthy soups."
+    },
+    {
+      "commonName": "Kamote",
+      "scientificName": "Ipomoea batatas",
+      "description": "Kamote plants have heart-shaped leaves and produce sweet tubers. They are common in Cavite farmlands. Both leaves and roots are edible and nutritious."
+    },
+    {
+      "commonName": "Gabi",
+      "scientificName": "Colocasia esculenta",
+      "description": "Gabi is a root crop with large, heart-shaped leaves. It grows in Cavite’s damp fields. Its tubers are used in local dishes like laing and sinigang."
+    },
+    {
+      "commonName": "Luya",
+      "scientificName": "Zingiber officinale",
+      "description": "Luya is a rhizome plant with narrow leaves and aromatic roots. It grows well in Cavite’s slightly shaded soil. It’s used for cooking and herbal medicine."
+    },
+    {
+      "commonName": "Bawang",
+      "scientificName": "Allium sativum",
+      "description": "Bawang has long leaves and underground bulbs divided into cloves. It’s cultivated in Cavite’s vegetable farms. It’s used in cooking and has medicinal properties."
+    },
+    {
+      "commonName": "Sibuyas",
+      "scientificName": "Allium cepa",
+      "description": "Sibuyas plants have green tubular leaves and round bulbs. They are grown in Cavite’s dry fields. They’re a vital ingredient in many Filipino dishes."
+    },
+    {
+      "commonName": "Mais",
+      "scientificName": "Zea mays",
+      "description": "Mais is a tall grass with ears containing yellow kernels. It grows in Cavite’s farmlands. The grains are used for food, animal feed, and snacks."
+    },
+    {
+      "commonName": "Palay",
+      "scientificName": "Oryza sativa",
+      "description": "Palay is a cereal crop with long stems and golden grains. It is the most important crop cultivated in Cavite’s fields. It provides the staple food — rice — for most Filipinos."
+    }
+  ]
+}
