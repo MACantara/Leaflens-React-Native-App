@@ -14,6 +14,7 @@
     "android": {
       "package": "com.leaflens.mobile",
       "versionCode": 1,
+      "usesCleartextTraffic": true,
       "permissions": [
         "REQUEST_INSTALL_PACKAGES"
       ],
