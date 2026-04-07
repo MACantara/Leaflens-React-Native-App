@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { deleteLeaf, getUserHistory, getUserLeafCount, updateLeafImageVisibility } from '../api/leaves';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { getUserHistory, getUserLeafCount } from '../api/leaves';
 import { ApiError } from '../api/client';
-import { useAppModal } from '../components/AppModalProvider';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
 
@@ -21,11 +20,8 @@ function toErrorText(error: unknown): string {
 }
 
 export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Element {
-  const { showConfirm } = useAppModal();
   const [history, setHistory] = useState<LeafItem[]>([]);
   const [leafCount, setLeafCount] = useState(0);
-  const [deletingLeafId, setDeletingLeafId] = useState<number | undefined>();
-  const [updatingVisibilityLeafId, setUpdatingVisibilityLeafId] = useState<number | undefined>();
   const [error, setError] = useState('');
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
 
@@ -43,62 +39,6 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
       setError(toErrorText(historyError));
     }
   }, [session.token, session.userId]);
-
-  async function onDeleteLeaf(leafId: number): Promise<void> {
-    setDeletingLeafId(leafId);
-    setError('');
-
-    try {
-      await deleteLeaf(leafId, session.token);
-      await loadHistory();
-    } catch (deleteError) {
-      setError(toErrorText(deleteError));
-    } finally {
-      setDeletingLeafId(undefined);
-    }
-  }
-
-  async function confirmDeleteLeaf(item: LeafItem): Promise<void> {
-    const leafName = item.commonName?.trim() || 'this plant';
-    const confirmed = await showConfirm({
-      title: 'Delete from history',
-      message: `Remove ${leafName} from your history?`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      tone: 'danger'
-    });
-
-    if (!confirmed) {
-      return;
-    }
-
-    await onDeleteLeaf(item.leafId);
-  }
-
-  async function onToggleImageVisibility(item: LeafItem): Promise<void> {
-    setUpdatingVisibilityLeafId(item.leafId);
-    setError('');
-
-    const nextValue = !Boolean(item.isImagePublic);
-
-    try {
-      await updateLeafImageVisibility(item.leafId, nextValue, session.token);
-      setHistory((current) =>
-        current.map((leaf) =>
-          leaf.leafId === item.leafId
-            ? {
-                ...leaf,
-                isImagePublic: nextValue
-              }
-            : leaf
-        )
-      );
-    } catch (visibilityError) {
-      setError(toErrorText(visibilityError));
-    } finally {
-      setUpdatingVisibilityLeafId(undefined);
-    }
-  }
 
   useEffect(() => {
     void runInitialLoad(loadHistory);
@@ -123,38 +63,6 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
           <View style={styles.itemPill}>
             <View style={styles.itemTopRow}>
               <Text style={styles.itemText}>{item.commonName || 'Cannot identify plant from image'}</Text>
-            </View>
-
-            <Text style={styles.shareStateText}>
-              {item.isImagePublic ? 'Image visibility: Public' : 'Image visibility: Private'}
-            </Text>
-
-            <View style={styles.itemActionsRow}>
-              <Pressable
-                style={[styles.shareButton, updatingVisibilityLeafId === item.leafId && styles.disabledButton]}
-                onPress={() => {
-                  void onToggleImageVisibility(item);
-                }}
-                disabled={updatingVisibilityLeafId === item.leafId}
-              >
-                <Text style={styles.shareButtonLabel}>
-                  {updatingVisibilityLeafId === item.leafId
-                    ? 'Updating...'
-                    : item.isImagePublic
-                      ? 'Make Private'
-                      : 'Share Publicly'}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.deleteButton, deletingLeafId === item.leafId && styles.disabledButton]}
-                onPress={() => {
-                  void confirmDeleteLeaf(item);
-                }}
-                disabled={deletingLeafId === item.leafId}
-              >
-                <Text style={styles.deleteButtonLabel}>{deletingLeafId === item.leafId ? 'Deleting...' : 'Delete'}</Text>
-              </Pressable>
             </View>
           </View>
         )}
@@ -206,38 +114,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     flex: 1
-  },
-  shareStateText: {
-    color: '#475569',
-    fontSize: 12,
-    fontWeight: '600'
-  },
-  itemActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8
-  },
-  shareButton: {
-    borderRadius: 10,
-    backgroundColor: '#e0f2fe',
-    paddingHorizontal: 10,
-    paddingVertical: 7
-  },
-  shareButtonLabel: {
-    color: '#0c4a6e',
-    fontWeight: '700',
-    fontSize: 12
-  },
-  deleteButton: {
-    borderRadius: 10,
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 10,
-    paddingVertical: 7
-  },
-  deleteButtonLabel: {
-    color: '#991b1b',
-    fontWeight: '700',
-    fontSize: 12
   },
   disabledButton: {
     opacity: 0.6
