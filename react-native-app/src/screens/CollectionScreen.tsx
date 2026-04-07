@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { getLeafImageSource, getUserHistory, getUserTags, searchUserLeaves } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
@@ -29,7 +29,6 @@ export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScree
   const [leafList, setLeafList] = useState<LeafItem[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [keyword, setKeyword] = useState('');
   const [error, setError] = useState('');
   const { width: viewportWidth } = useWindowDimensions();
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
@@ -42,7 +41,7 @@ export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScree
   const cardMinHeight = cardImageHeight + 140;
   const snapInterval = cardWidth + CARD_HORIZONTAL_GAP;
 
-  const hasFilters = keyword.trim().length > 0 || selectedTags.length > 0;
+  const hasFilters = selectedTags.length > 0;
 
   const refreshCollection = useCallback(async (): Promise<void> => {
     setError('');
@@ -50,7 +49,7 @@ export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScree
     try {
       const [historyOrSearch, tags] = await Promise.all([
         hasFilters
-          ? searchUserLeaves(session.userId, session.token, keyword.trim() || undefined, selectedTags)
+          ? searchUserLeaves(session.userId, session.token, undefined, selectedTags)
           : getUserHistory(session.userId, session.token).then((history) => history.leafList ?? []),
         getUserTags(session.userId, session.token)
       ]);
@@ -60,11 +59,11 @@ export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScree
     } catch (refreshError) {
       setError(toErrorText(refreshError));
     }
-  }, [hasFilters, keyword, selectedTags, session.token, session.userId]);
+  }, [hasFilters, selectedTags, session.token, session.userId]);
 
   useEffect(() => {
     void runInitialLoad(refreshCollection);
-  }, [runInitialLoad, refreshCollection]);
+  }, [runInitialLoad, refreshCollection, selectedTags]);
 
   function toggleTag(tag: string): void {
     setSelectedTags((current) => {
@@ -81,29 +80,6 @@ export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScree
       <Text style={styles.title}>Your Collection</Text>
 
       <View style={styles.searchCard}>
-        <View style={styles.searchRow}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search your collection"
-            placeholderTextColor="#9ca3af"
-            value={keyword}
-            onChangeText={setKeyword}
-            returnKeyType="search"
-            onSubmitEditing={() => {
-              void runInitialLoad(refreshCollection);
-            }}
-          />
-          <Pressable
-            style={[styles.searchButton, loading && styles.disabledButton]}
-            onPress={() => {
-              void runInitialLoad(refreshCollection);
-            }}
-            disabled={loading}
-          >
-            <Text style={styles.searchButtonLabel}>Search</Text>
-          </Pressable>
-        </View>
-
         {availableTags.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagFilterRow}>
             {availableTags.map((tag) => {
@@ -177,32 +153,6 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
     gap: 10
-  },
-  searchRow: {
-    flexDirection: 'row',
-    gap: 8
-  },
-  searchInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 14,
-    minHeight: 46,
-    paddingHorizontal: 12,
-    color: '#111827'
-  },
-  searchButton: {
-    minWidth: 84,
-    borderRadius: 14,
-    backgroundColor: '#8bc34a',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10
-  },
-  searchButtonLabel: {
-    color: '#0f172a',
-    fontSize: 13,
-    fontWeight: '700'
   },
   tagFilterRow: {
     gap: 8,
