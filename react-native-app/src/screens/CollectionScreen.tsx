@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { deleteLeaf, getLeafImageSource, getUserHistory, getUserTags, searchUserLeaves } from '../api/leaves';
+import { deleteLeaf, getLeafImageSource, getUserHistory, getUserTags, searchUserLeaves, updateLeafImageVisibility } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { useAppModal } from '../components/AppModalProvider';
 import { LeafItem, Session } from '../types/models';
@@ -35,6 +35,7 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
   const [deletingLeafId, setDeletingLeafId] = useState<number | undefined>();
+  const [updatingVisibilityLeafId, setUpdatingVisibilityLeafId] = useState<number | undefined>();
   const [error, setError] = useState('');
   const { width: viewportWidth } = useWindowDimensions();
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
@@ -116,6 +117,40 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
     await onDeleteLeaf(leaf.leafId);
   }
 
+  async function onToggleImageVisibility(leaf: LeafItem): Promise<void> {
+    setUpdatingVisibilityLeafId(leaf.leafId);
+    setError('');
+
+    const nextValue = !Boolean(leaf.isImagePublic);
+
+    try {
+      await updateLeafImageVisibility(leaf.leafId, nextValue, session.token);
+      setLeafList((current) =>
+        current.map((entry) =>
+          entry.leafId === leaf.leafId
+            ? {
+                ...entry,
+                isImagePublic: nextValue
+              }
+            : entry
+        )
+      );
+
+      setSelectedLeaf((current) =>
+        current && current.leafId === leaf.leafId
+          ? {
+              ...current,
+              isImagePublic: nextValue
+            }
+          : current
+      );
+    } catch (visibilityError) {
+      setError(toErrorText(visibilityError));
+    } finally {
+      setUpdatingVisibilityLeafId(undefined);
+    }
+  }
+
   if (selectedLeaf) {
     return (
       <ScrollView style={styles.root} contentContainerStyle={styles.detailWrap}>
@@ -149,6 +184,31 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
             </View>
           ) : (
             <Text style={styles.detailSectionBody}>N/A</Text>
+          )}
+
+          {selectedLeaf.ownerUserId === session.userId && (
+            <>
+              <Text style={styles.detailSectionTitle}>Image visibility</Text>
+              <Text style={styles.detailSectionBody}>
+                {selectedLeaf.isImagePublic ? 'Public' : 'Private'}
+              </Text>
+
+              <Pressable
+                style={[styles.visibilityButton, updatingVisibilityLeafId === selectedLeaf.leafId && styles.disabledButton]}
+                onPress={() => {
+                  void onToggleImageVisibility(selectedLeaf);
+                }}
+                disabled={updatingVisibilityLeafId === selectedLeaf.leafId}
+              >
+                <Text style={styles.visibilityButtonLabel}>
+                  {updatingVisibilityLeafId === selectedLeaf.leafId
+                    ? 'Updating...'
+                    : selectedLeaf.isImagePublic
+                      ? 'Make Private'
+                      : 'Share Publicly'}
+                </Text>
+              </Pressable>
+            </>
           )}
 
           <Pressable
@@ -412,6 +472,18 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     fontSize: 12,
     fontWeight: '600'
+  },
+  visibilityButton: {
+    marginTop: 2,
+    borderRadius: 14,
+    backgroundColor: '#e0f2fe',
+    alignItems: 'center',
+    paddingVertical: 12
+  },
+  visibilityButtonLabel: {
+    color: '#0c4a6e',
+    fontSize: 14,
+    fontWeight: '700'
   },
   deleteButton: {
     marginTop: 12,
