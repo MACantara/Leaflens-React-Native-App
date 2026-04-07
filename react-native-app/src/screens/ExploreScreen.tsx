@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   ImageBackground,
@@ -18,6 +18,7 @@ interface ExploreScreenProps {
   preselectedTag?: string;
   preselectedTagVersion?: number;
   globalSearchKeyword?: string;
+  globalSearchTags?: string[];
   globalSearchVersion?: number;
 }
 
@@ -36,6 +37,7 @@ export function ExploreScreen({
   preselectedTag,
   preselectedTagVersion,
   globalSearchKeyword,
+  globalSearchTags,
   globalSearchVersion
 }: ExploreScreenProps): React.JSX.Element {
   const [keyword, setKeyword] = useState('');
@@ -63,39 +65,6 @@ export function ExploreScreen({
     },
     [session]
   );
-
-  const availableTags = useMemo(() => {
-    const countByTag = new Map<string, number>();
-
-    items.forEach((item) => {
-      (item.tags ?? []).forEach((rawTag) => {
-        const normalized = String(rawTag).trim().toLowerCase();
-        if (!normalized) {
-          return;
-        }
-
-        countByTag.set(normalized, (countByTag.get(normalized) ?? 0) + 1);
-      });
-    });
-
-    return [...countByTag.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([tag]) => tag)
-      .slice(0, 10);
-  }, [items]);
-
-  const displayedTags = useMemo(() => {
-    const merged = [...selectedTags, ...availableTags];
-    const unique = new Set<string>();
-
-    return merged.filter((tag) => {
-      if (unique.has(tag)) {
-        return false;
-      }
-      unique.add(tag);
-      return true;
-    });
-  }, [availableTags, selectedTags]);
 
   const loadExploreData = useCallback(async (): Promise<void> => {
     await fetchExplore(keyword, selectedTags);
@@ -148,49 +117,16 @@ export function ExploreScreen({
     }
 
     const normalizedKeyword = (globalSearchKeyword ?? '').trim();
+    const normalizedTags = globalSearchTags ?? [];
     setKeyword(normalizedKeyword);
-    setSelectedTags([]);
+    setSelectedTags(normalizedTags);
     void runInitialLoad(async () => {
-      await fetchExplore(normalizedKeyword, []);
+      await fetchExplore(normalizedKeyword, normalizedTags);
     });
-  }, [fetchExplore, globalSearchKeyword, globalSearchVersion, runInitialLoad]);
-
-  function toggleTag(tag: string): void {
-    setSelectedTags((current) => {
-      if (current.includes(tag)) {
-        return current.filter((entry) => entry !== tag);
-      }
-
-      return [...current, tag];
-    });
-  }
+  }, [fetchExplore, globalSearchKeyword, globalSearchTags, globalSearchVersion, runInitialLoad]);
 
   return (
     <View style={styles.root}>
-      <View style={styles.filtersFloatingCard}>
-        <View style={styles.filtersHeaderRow}>
-          <View style={styles.filtersTitleWrap}>
-            <Feather name="sliders" size={24} color="#475569" />
-            <Text style={styles.filtersTitle}>Filters</Text>
-          </View>
-        </View>
-
-        <View style={styles.tagGrid}>
-          {displayedTags.length > 0 ? (
-            displayedTags.map((tag) => {
-              const active = selectedTags.includes(tag);
-              return (
-                <Pressable key={tag} style={[styles.tagPill, active && styles.tagPillActive]} onPress={() => toggleTag(tag)}>
-                  <Text style={[styles.tagPillText, active && styles.tagPillActiveText]}>{tag}</Text>
-                </Pressable>
-              );
-            })
-          ) : (
-            <Text style={styles.noTagText}>Use global search to load suggested tags.</Text>
-          )}
-        </View>
-      </View>
-
       {loading && <Text style={styles.helperText}>Loading leaves...</Text>}
       {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
 
@@ -249,43 +185,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     gap: 10
   },
-  filtersFloatingCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 16,
-    gap: 14,
-    shadowColor: '#000000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 3
-  },
-  filtersHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start'
-  },
-  filtersTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10
-  },
-  filtersTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f2937'
-  },
-  tagGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12
-  },
-  noTagText: {
-    color: '#6b7280',
-    fontSize: 13
-  },
   listContent: {
     gap: 12,
     paddingTop: 2,
@@ -342,27 +241,6 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 15,
     lineHeight: 20
-  },
-  tagPill: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 10
-  },
-  tagPillActive: {
-    backgroundColor: '#dfeedd',
-    borderColor: '#8bc34a'
-  },
-  tagPillText: {
-    color: '#1f2937',
-    fontSize: 14,
-    fontWeight: '600'
-  },
-  tagPillActiveText: {
-    color: '#14532d',
-    fontWeight: '700'
   },
   saveButton: {
     marginTop: 10,

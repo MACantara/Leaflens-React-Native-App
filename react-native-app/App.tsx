@@ -3,6 +3,7 @@ import { Modal, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar,
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
+import { exploreLeaves, getUserTags } from './src/api/leaves';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { AnalyzeScreen } from './src/screens/AnalyzeScreen';
 import { CollectionScreen } from './src/screens/CollectionScreen';
@@ -48,8 +49,10 @@ function renderActiveTab(
   selectedLeafId?: number,
   selectedLeafVersion?: number,
   collectionSearchKeyword?: string,
+  collectionSearchTags?: string[],
   collectionSearchVersion?: number,
   exploreSearchKeyword?: string,
+  exploreSearchTags?: string[],
   exploreSearchVersion?: number,
   explorePrefillTag?: string,
   explorePrefillVersion?: number
@@ -73,6 +76,7 @@ function renderActiveTab(
         session={session}
         onOpenLeafDetails={onOpenLeafDetails}
         globalSearchKeyword={collectionSearchKeyword}
+        globalSearchTags={collectionSearchTags}
         globalSearchVersion={collectionSearchVersion}
       />
     );
@@ -93,6 +97,7 @@ function renderActiveTab(
         preselectedTag={explorePrefillTag}
         preselectedTagVersion={explorePrefillVersion}
         globalSearchKeyword={exploreSearchKeyword}
+        globalSearchTags={exploreSearchTags}
         globalSearchVersion={exploreSearchVersion}
       />
     );
@@ -113,9 +118,15 @@ export default function App(): React.JSX.Element {
   const [globalSearchVisible, setGlobalSearchVisible] = useState(false);
   const [globalSearchKeyword, setGlobalSearchKeyword] = useState('');
   const [globalSearchScope, setGlobalSearchScope] = useState<GlobalSearchScope>('collection');
+  const [globalSearchSelectedTags, setGlobalSearchSelectedTags] = useState<string[]>([]);
+  const [globalSearchAvailableTags, setGlobalSearchAvailableTags] = useState<string[]>([]);
+  const [globalSearchTagsLoading, setGlobalSearchTagsLoading] = useState(false);
+  const [globalSearchTagsError, setGlobalSearchTagsError] = useState('');
   const [collectionSearchKeyword, setCollectionSearchKeyword] = useState('');
+  const [collectionSearchTags, setCollectionSearchTags] = useState<string[]>([]);
   const [collectionSearchVersion, setCollectionSearchVersion] = useState(0);
   const [exploreSearchKeyword, setExploreSearchKeyword] = useState('');
+  const [exploreSearchTags, setExploreSearchTags] = useState<string[]>([]);
   const [exploreSearchVersion, setExploreSearchVersion] = useState(0);
   const [explorePrefillTag, setExplorePrefillTag] = useState<string | undefined>();
   const [explorePrefillVersion, setExplorePrefillVersion] = useState(0);
@@ -134,6 +145,9 @@ export default function App(): React.JSX.Element {
     setSession(undefined);
     setSelectedLeafId(undefined);
     setGlobalSearchKeyword('');
+    setGlobalSearchSelectedTags([]);
+    setGlobalSearchAvailableTags([]);
+    setGlobalSearchTagsError('');
     setGlobalSearchScope('collection');
     setGlobalSearchVisible(false);
     setActiveTab('home');
@@ -180,14 +194,83 @@ export default function App(): React.JSX.Element {
     setSelectedLeafId(undefined);
   }
 
+  async function loadGlobalTags(scope: GlobalSearchScope): Promise<void> {
+    if (!session) {
+      setGlobalSearchAvailableTags([]);
+      setGlobalSearchTagsError('');
+      return;
+    }
+
+    setGlobalSearchTagsLoading(true);
+    setGlobalSearchTagsError('');
+
+    try {
+      if (scope === 'collection') {
+        const tags = await getUserTags(session.userId, session.token);
+        setGlobalSearchAvailableTags(tags);
+        return;
+      }
+
+      const leaves = await exploreLeaves(session.token);
+      const countByTag = new Map<string, number>();
+
+      leaves.forEach((leaf) => {
+        (leaf.tags ?? []).forEach((rawTag) => {
+          const normalized = String(rawTag).trim().toLowerCase();
+          if (!normalized) {
+            return;
+          }
+
+          countByTag.set(normalized, (countByTag.get(normalized) ?? 0) + 1);
+        });
+      });
+
+      const sortedTags = [...countByTag.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([tag]) => tag)
+        .slice(0, 12);
+
+      setGlobalSearchAvailableTags(sortedTags);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load tags.';
+      setGlobalSearchTagsError(message);
+      setGlobalSearchAvailableTags([]);
+    } finally {
+      setGlobalSearchTagsLoading(false);
+    }
+  }
+
   function openGlobalSearch(): void {
     setMenuVisible(false);
-    setGlobalSearchScope(activeTab === 'explore' ? 'explore' : 'collection');
+    const nextScope: GlobalSearchScope = activeTab === 'explore' ? 'explore' : 'collection';
+
+    setGlobalSearchScope(nextScope);
+    setGlobalSearchKeyword(nextScope === 'explore' ? exploreSearchKeyword : collectionSearchKeyword);
+    setGlobalSearchSelectedTags(nextScope === 'explore' ? exploreSearchTags : collectionSearchTags);
     setGlobalSearchVisible(true);
+    void loadGlobalTags(nextScope);
   }
 
   function toggleGlobalSearchScope(): void {
-    setGlobalSearchScope((current) => (current === 'explore' ? 'collection' : 'explore'));
+    setGlobalSearchScope((current) => {
+      const nextScope: GlobalSearchScope = current === 'explore' ? 'collection' : 'explore';
+
+      setGlobalSearchKeyword(nextScope === 'explore' ? exploreSearchKeyword : collectionSearchKeyword);
+      setGlobalSearchSelectedTags(nextScope === 'explore' ? exploreSearchTags : collectionSearchTags);
+      void loadGlobalTags(nextScope);
+
+      return nextScope;
+    });
+  }
+
+  function toggleGlobalTag(tag: string): void {
+    setGlobalSearchSelectedTags((current) => {
+      if (current.includes(tag)) {
+        return current.filter((entry) => entry !== tag);
+      }
+
+      return [...current, tag];
+    });
   }
 
   function runGlobalSearch(): void {
@@ -201,7 +284,9 @@ export default function App(): React.JSX.Element {
 
   function openCollectionSearch(): void {
     const nextKeyword = globalSearchKeyword.trim();
+    const nextTags = [...globalSearchSelectedTags];
     setCollectionSearchKeyword(nextKeyword);
+    setCollectionSearchTags(nextTags);
     setCollectionSearchVersion((value) => value + 1);
     setSelectedLeafId(undefined);
     setActiveTab('home');
@@ -210,7 +295,9 @@ export default function App(): React.JSX.Element {
 
   function openPublicExploreSearch(): void {
     const nextKeyword = globalSearchKeyword.trim();
+    const nextTags = [...globalSearchSelectedTags];
     setExploreSearchKeyword(nextKeyword);
+    setExploreSearchTags(nextTags);
     setExploreSearchVersion((value) => value + 1);
     setActiveTab('explore');
     setGlobalSearchVisible(false);
@@ -323,9 +410,33 @@ export default function App(): React.JSX.Element {
 
               <Text style={styles.searchScopeDescription}>
                 {globalSearchScope === 'explore'
-                  ? 'Explore mode is active. Tag filters are hidden.'
+                  ? 'Explore mode is active. Refine results with tags below.'
                   : 'Collection mode is active. Search runs on your saved plants.'}
               </Text>
+
+              <View style={styles.searchTagGrid}>
+                {globalSearchTagsLoading ? (
+                  <Text style={styles.searchTagHelperText}>Loading filters...</Text>
+                ) : globalSearchAvailableTags.length > 0 ? (
+                  globalSearchAvailableTags.map((tag) => {
+                    const selected = globalSearchSelectedTags.includes(tag);
+
+                    return (
+                      <Pressable
+                        key={tag}
+                        style={[styles.searchTagPill, selected && styles.searchTagPillActive]}
+                        onPress={() => toggleGlobalTag(tag)}
+                      >
+                        <Text style={[styles.searchTagPillText, selected && styles.searchTagPillTextActive]}>{tag}</Text>
+                      </Pressable>
+                    );
+                  })
+                ) : (
+                  <Text style={styles.searchTagHelperText}>No filters available.</Text>
+                )}
+              </View>
+
+              {globalSearchTagsError.length > 0 && <Text style={styles.searchTagErrorText}>{globalSearchTagsError}</Text>}
             </View>
           </Pressable>
         </Pressable>
@@ -359,8 +470,10 @@ export default function App(): React.JSX.Element {
           selectedLeafId,
           selectedLeafVersion,
           collectionSearchKeyword,
+          collectionSearchTags,
           collectionSearchVersion,
           exploreSearchKeyword,
+          exploreSearchTags,
           exploreSearchVersion,
           explorePrefillTag,
           explorePrefillVersion
@@ -593,5 +706,39 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     fontSize: 16,
     lineHeight: 24
+  },
+  searchTagGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10
+  },
+  searchTagPill: {
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#b7b7b7',
+    backgroundColor: '#f7f7f7',
+    paddingHorizontal: 14,
+    paddingVertical: 10
+  },
+  searchTagPillActive: {
+    backgroundColor: '#d4efce',
+    borderColor: '#70c95b'
+  },
+  searchTagPillText: {
+    color: '#1f2937',
+    fontSize: 15,
+    fontWeight: '600'
+  },
+  searchTagPillTextActive: {
+    color: '#14532d',
+    fontWeight: '700'
+  },
+  searchTagHelperText: {
+    color: '#6b7280',
+    fontSize: 14
+  },
+  searchTagErrorText: {
+    color: '#dc2626',
+    fontSize: 13
   }
 });

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { getLeafImageSource, getUserHistory, getUserTags, searchUserLeaves } from '../api/leaves';
+import { FlatList, Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { getLeafImageSource, getUserHistory, searchUserLeaves } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
@@ -14,6 +14,7 @@ interface CollectionScreenProps {
   session: Session;
   onOpenLeafDetails?: (leafId: number) => void;
   globalSearchKeyword?: string;
+  globalSearchTags?: string[];
   globalSearchVersion?: number;
 }
 
@@ -31,12 +32,12 @@ export function CollectionScreen({
   session,
   onOpenLeafDetails,
   globalSearchKeyword,
+  globalSearchTags,
   globalSearchVersion
 }: CollectionScreenProps): React.JSX.Element {
   const [leafList, setLeafList] = useState<LeafItem[]>([]);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [keyword, setKeyword] = useState('');
+  const [appliedKeyword, setAppliedKeyword] = useState('');
+  const [appliedTags, setAppliedTags] = useState<string[]>([]);
   const [error, setError] = useState('');
   const { width: viewportWidth } = useWindowDimensions();
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
@@ -57,15 +58,11 @@ export function CollectionScreen({
         const normalizedKeyword = nextKeyword.trim();
         const hasActiveFilters = nextTags.length > 0 || normalizedKeyword.length > 0;
 
-        const [historyOrSearch, tags] = await Promise.all([
-          hasActiveFilters
-            ? searchUserLeaves(session.userId, session.token, normalizedKeyword || undefined, nextTags)
-            : getUserHistory(session.userId, session.token).then((history) => history.leafList ?? []),
-          getUserTags(session.userId, session.token)
-        ]);
+        const historyOrSearch = hasActiveFilters
+          ? await searchUserLeaves(session.userId, session.token, normalizedKeyword || undefined, nextTags)
+          : await getUserHistory(session.userId, session.token).then((history) => history.leafList ?? []);
 
         setLeafList(historyOrSearch);
-        setAvailableTags(tags);
       } catch (refreshError) {
         setError(toErrorText(refreshError));
       }
@@ -74,8 +71,8 @@ export function CollectionScreen({
   );
 
   const refreshCollection = useCallback(async (): Promise<void> => {
-    await fetchCollection(keyword, selectedTags);
-  }, [fetchCollection, keyword, selectedTags]);
+    await fetchCollection(appliedKeyword, appliedTags);
+  }, [appliedKeyword, appliedTags, fetchCollection]);
 
   useEffect(() => {
     void runInitialLoad(refreshCollection);
@@ -87,42 +84,18 @@ export function CollectionScreen({
     }
 
     const normalizedKeyword = (globalSearchKeyword ?? '').trim();
-    setKeyword(normalizedKeyword);
-    setSelectedTags([]);
+    const normalizedTags = globalSearchTags ?? [];
+    setAppliedKeyword(normalizedKeyword);
+    setAppliedTags(normalizedTags);
 
     void runInitialLoad(async () => {
-      await fetchCollection(normalizedKeyword, []);
+      await fetchCollection(normalizedKeyword, normalizedTags);
     });
-  }, [fetchCollection, globalSearchKeyword, globalSearchVersion, runInitialLoad]);
-
-  function toggleTag(tag: string): void {
-    setSelectedTags((current) => {
-      if (current.includes(tag)) {
-        return current.filter((entry) => entry !== tag);
-      }
-
-      return [...current, tag];
-    });
-  }
+  }, [fetchCollection, globalSearchKeyword, globalSearchTags, globalSearchVersion, runInitialLoad]);
 
   return (
     <View style={styles.root}>
       <Text style={styles.title}>Your Collection</Text>
-
-      <View style={styles.filterCard}>
-        {availableTags.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagFilterRow}>
-            {availableTags.map((tag) => {
-              const isSelected = selectedTags.includes(tag);
-              return (
-                <Pressable key={tag} style={[styles.tagFilterPill, isSelected && styles.tagFilterPillActive]} onPress={() => toggleTag(tag)}>
-                  <Text style={[styles.tagFilterText, isSelected && styles.tagFilterTextActive]}>{tag}</Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
-      </View>
 
       {loading && <Text style={styles.helperText}>Loading...</Text>}
       {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
@@ -176,37 +149,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     color: '#111827'
-  },
-  filterCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 12,
-    marginBottom: 10,
-    gap: 10
-  },
-  tagFilterRow: {
-    gap: 8,
-    paddingRight: 6
-  },
-  tagFilterPill: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: '#f8fafc'
-  },
-  tagFilterPillActive: {
-    backgroundColor: '#dfeedd',
-    borderColor: '#8bc34a'
-  },
-  tagFilterText: {
-    color: '#475569',
-    fontSize: 12,
-    fontWeight: '600'
-  },
-  tagFilterTextActive: {
-    color: '#14532d'
   },
   helperText: {
     color: '#475569',
