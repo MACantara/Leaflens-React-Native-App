@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { getUserHistory } from '../api/leaves';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { deleteLeaf, getUserHistory, getUserLeafCount } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
@@ -21,6 +21,8 @@ function toErrorText(error: unknown): string {
 
 export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Element {
   const [history, setHistory] = useState<LeafItem[]>([]);
+  const [leafCount, setLeafCount] = useState(0);
+  const [deletingLeafId, setDeletingLeafId] = useState<number | undefined>();
   const [error, setError] = useState('');
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
 
@@ -28,12 +30,30 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
     setError('');
 
     try {
-      const response = await getUserHistory(session.userId, session.token);
+      const [response, count] = await Promise.all([
+        getUserHistory(session.userId, session.token),
+        getUserLeafCount(session.userId, session.token)
+      ]);
       setHistory(response.leafList ?? []);
+      setLeafCount(count);
     } catch (historyError) {
       setError(toErrorText(historyError));
     }
   }, [session.token, session.userId]);
+
+  async function onDeleteLeaf(leafId: number): Promise<void> {
+    setDeletingLeafId(leafId);
+    setError('');
+
+    try {
+      await deleteLeaf(leafId, session.token);
+      await loadHistory();
+    } catch (deleteError) {
+      setError(toErrorText(deleteError));
+    } finally {
+      setDeletingLeafId(undefined);
+    }
+  }
 
   useEffect(() => {
     void runInitialLoad(loadHistory);
@@ -42,6 +62,7 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
   return (
     <View style={styles.root}>
       <Text style={styles.title}>Lens History</Text>
+      <Text style={styles.helperText}>Total saved leaves: {leafCount}</Text>
       {loading && <Text style={styles.helperText}>Loading history...</Text>}
       {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
 
@@ -56,6 +77,15 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
         renderItem={({ item }) => (
           <View style={styles.itemPill}>
             <Text style={styles.itemText}>{item.commonName || 'Cannot identify plant from image'}</Text>
+            <Pressable
+              style={[styles.deleteButton, deletingLeafId === item.leafId && styles.disabledButton]}
+              onPress={() => {
+                void onDeleteLeaf(item.leafId);
+              }}
+              disabled={deletingLeafId === item.leafId}
+            >
+              <Text style={styles.deleteButtonLabel}>{deletingLeafId === item.leafId ? 'Deleting...' : 'Delete'}</Text>
+            </Pressable>
           </View>
         )}
         ListEmptyComponent={!loading ? <Text style={styles.helperText}>No history yet.</Text> : null}
@@ -94,11 +124,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#e6f1e6',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8
   },
   itemText: {
     color: '#111827',
     fontSize: 15,
-    fontWeight: '500'
+    fontWeight: '500',
+    flex: 1
+  },
+  deleteButton: {
+    borderRadius: 10,
+    backgroundColor: '#fee2e2',
+    paddingHorizontal: 10,
+    paddingVertical: 7
+  },
+  deleteButtonLabel: {
+    color: '#991b1b',
+    fontWeight: '700',
+    fontSize: 12
+  },
+  disabledButton: {
+    opacity: 0.6
   }
 });
