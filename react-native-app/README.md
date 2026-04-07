@@ -115,6 +115,20 @@ Use JDK 17 or 21 (not Java 25), and make sure `javac` is available.
 
 `npm run android` now runs a Java compatibility pre-check and will print install guidance if your Java setup is incompatible.
 
+If `npm run android` reports Android SDK setup is incomplete:
+- Ensure `ANDROID_SDK_ROOT` points to a full SDK directory (not just an extracted platform-tools bundle).
+- Install Android SDK Command-line Tools.
+- Accept licenses.
+- Install NDK `27.1.12297006`.
+
+Example (Linux, after sdkmanager is available):
+
+```bash
+export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
+yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" --licenses
+"$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "ndk;27.1.12297006"
+```
+
 Fedora quick fix:
 
 ```bash

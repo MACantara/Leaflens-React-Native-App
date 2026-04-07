@@ -1,9 +1,10 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 
 const SUPPORTED_JAVA_MAJORS = new Set([17, 21]);
+const REQUIRED_NDK_VERSION = '27.1.12297006';
 
 function runCapture(command, commandArgs, options = {}) {
   return spawnSync(command, commandArgs, {
@@ -29,6 +30,10 @@ function parseJavaMajor(versionText) {
   }
 
   return first;
+}
+
+function escapeForGradleLocalProperties(value) {
+  return value.replace(/\\/g, '\\\\').replace(/:/g, '\\:');
 }
 
 function javaExecutableName() {
@@ -130,6 +135,148 @@ function printInstallHint(currentMajor, javacAvailable) {
   console.error('Install JDK 17 or 21 and export JAVA_HOME before running npm run android.');
 }
 
+function sdkManagerName() {
+  return process.platform === 'win32' ? 'sdkmanager.bat' : 'sdkmanager';
+}
+
+function sdkRootCandidates() {
+  const home = process.env.HOME ?? '';
+  const localAppData = process.env.LOCALAPPDATA ?? '';
+
+  return [
+    process.env.ANDROID_SDK_ROOT,
+    process.env.ANDROID_HOME,
+    home ? path.join(home, 'Android', 'Sdk') : undefined,
+    home ? path.join(home, 'Library', 'Android', 'sdk') : undefined,
+    localAppData ? path.join(localAppData, 'Android', 'Sdk') : undefined
+  ].filter(Boolean);
+}
+
+function resolveSdkRoot() {
+  const candidates = sdkRootCandidates();
+  let bestCandidate;
+  let bestScore = -1;
+
+  candidates.forEach((candidate) => {
+    const platformToolsDir = path.join(candidate, 'platform-tools');
+    if (!existsSync(platformToolsDir)) {
+      return;
+    }
+
+    let score = 10;
+
+    const hasSdkManager = Boolean(resolveSdkManager(candidate));
+    if (hasSdkManager) {
+      score += 5;
+    }
+
+    if (existsSync(path.join(candidate, 'licenses'))) {
+      score += 3;
+    }
+
+    if (hasRequiredNdkInstalled(candidate)) {
+      score += 2;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestCandidate = candidate;
+    }
+  });
+
+  return bestCandidate;
+}
+
+function resolveSdkManager(sdkRoot) {
+  const name = sdkManagerName();
+
+  const candidates = [
+    path.join(sdkRoot, 'cmdline-tools', 'latest', 'bin', name),
+    path.join(sdkRoot, 'cmdline-tools', 'bin', name),
+    path.join(sdkRoot, 'tools', 'bin', name)
+  ];
+
+  return candidates.find((candidate) => existsSync(candidate));
+}
+
+function hasAcceptedAndroidLicenses(sdkRoot) {
+  const licenseDir = path.join(sdkRoot, 'licenses');
+  const androidLicense = path.join(licenseDir, 'android-sdk-license');
+  const ndkLicense = path.join(licenseDir, 'android-ndk-license');
+  return existsSync(androidLicense) || existsSync(ndkLicense);
+}
+
+function hasRequiredNdkInstalled(sdkRoot) {
+  return existsSync(path.join(sdkRoot, 'ndk', REQUIRED_NDK_VERSION));
+}
+
+function printSdkHint(sdkRoot, sdkManagerPath, licenseAccepted, ndkInstalled) {
+  console.error('Android SDK setup is incomplete for this build.');
+  console.error(`Resolved Android SDK root: ${sdkRoot}`);
+
+  if (!sdkManagerPath) {
+    console.error('Android Command-line Tools are missing (sdkmanager not found).');
+    console.error('Install Android SDK Command-line Tools from Android Studio SDK Manager.');
+  }
+
+  if (!licenseAccepted) {
+    console.error('Required Android SDK/NDK licenses are not accepted yet.');
+  }
+
+  if (!ndkInstalled) {
+    console.error(`NDK ${REQUIRED_NDK_VERSION} is not installed under this SDK root.`);
+  }
+
+  if (sdkManagerPath) {
+    console.error('Run these commands:');
+    if (process.platform === 'win32') {
+      console.error(`  set ANDROID_SDK_ROOT=${sdkRoot}`);
+      console.error(`  "${sdkManagerPath}" --sdk_root="${sdkRoot}" --licenses`);
+      console.error(`  "${sdkManagerPath}" --sdk_root="${sdkRoot}" "ndk;${REQUIRED_NDK_VERSION}"`);
+    } else {
+      console.error(`  export ANDROID_SDK_ROOT="${sdkRoot}"`);
+      console.error(`  yes | "${sdkManagerPath}" --sdk_root="${sdkRoot}" --licenses`);
+      console.error(`  "${sdkManagerPath}" --sdk_root="${sdkRoot}" "ndk;${REQUIRED_NDK_VERSION}"`);
+    }
+  } else {
+    console.error('After installing cmdline-tools, accept licenses and install NDK via sdkmanager.');
+  }
+}
+
+function prepareAndroidSdkEnv(env) {
+  const sdkRoot = resolveSdkRoot();
+
+  if (!sdkRoot) {
+    console.error('Android SDK root was not found. Expected a path containing platform-tools.');
+    console.error('Set ANDROID_SDK_ROOT (or ANDROID_HOME) to your Android SDK directory and retry.');
+    process.exit(1);
+  }
+
+  const sdkManagerPath = resolveSdkManager(sdkRoot);
+  const licenseAccepted = hasAcceptedAndroidLicenses(sdkRoot);
+  const ndkInstalled = hasRequiredNdkInstalled(sdkRoot);
+
+  env.ANDROID_SDK_ROOT = sdkRoot;
+  env.ANDROID_HOME = sdkRoot;
+  env.PATH = `${path.join(sdkRoot, 'platform-tools')}${path.delimiter}${env.PATH ?? ''}`;
+
+  const localPropertiesPath = path.join(process.cwd(), 'android', 'local.properties');
+  if (existsSync(path.dirname(localPropertiesPath))) {
+    const escaped = escapeForGradleLocalProperties(sdkRoot);
+    const localPropertiesContent = `sdk.dir=${escaped}${process.platform === 'win32' ? '\r\n' : '\n'}`;
+    try {
+      writeFileSync(localPropertiesPath, localPropertiesContent, 'utf8');
+    } catch {
+      // If writing fails, Gradle can still rely on env vars.
+    }
+  }
+
+  if (!sdkManagerPath || !licenseAccepted || !ndkInstalled) {
+    printSdkHint(sdkRoot, sdkManagerPath, licenseAccepted, ndkInstalled);
+    process.exit(1);
+  }
+}
+
 function runExpoAndroid(env) {
   const extraArgs = process.argv.slice(2);
   const result = spawnSync('npx', ['expo', 'run:android', ...extraArgs], {
@@ -163,6 +310,8 @@ function main() {
     printInstallHint(currentMajor, javacAvailable);
     process.exit(1);
   }
+
+  prepareAndroidSdkEnv(env);
 
   runExpoAndroid(env);
 }
