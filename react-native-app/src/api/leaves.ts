@@ -36,9 +36,9 @@ export function analyzeAndSaveLeaf(imageUri: string, userId: number, token: stri
   });
 }
 
-export function exploreLeaves(keyword?: string): Promise<LeafItem[]> {
-  const query = buildQuery({ keyword });
-  return apiRequest<LeafItem[]>(`/api/v1/leaves/explore${query}`, { method: 'GET' });
+export function exploreLeaves(token: string, keyword?: string, tags: string[] = []): Promise<LeafItem[]> {
+  const query = buildQuery({ keyword, tag: tags });
+  return apiRequest<LeafItem[]>(`/api/v1/leaves/explore${query}`, { method: 'GET', token });
 }
 
 export function saveExploreLeaf(leafId: number, userId: number, token: string): Promise<string> {
@@ -84,6 +84,22 @@ export function getLeafReferences(leafId: number, token: string): Promise<LeafRe
   });
 }
 
+export function deleteLeaf(leafId: number, token: string): Promise<string> {
+  return apiRequest<string>(`/api/v1/leaf-history/leaf/${leafId}`, {
+    method: 'DELETE',
+    token
+  });
+}
+
 export function getLeafImageUrl(leafId: number): string {
   return `${getApiBaseUrl()}/api/v1/leaf-history/leaf/${leafId}/image`;
+}
+
+export function getLeafImageSource(leafId: number, token: string): { uri: string; headers: { Authorization: string } } {
+  return {
+    uri: getLeafImageUrl(leafId),
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  };
 }
