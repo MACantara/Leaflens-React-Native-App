@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { deleteLeaf, getLeafImageSource, getUserHistory, getUserTags, searchUserLeaves } from '../api/leaves';
 import { ApiError } from '../api/client';
@@ -97,6 +97,24 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
     }
   }
 
+  function confirmDeleteLeaf(leaf: LeafItem): void {
+    const leafName = leaf.commonName?.trim() || 'this plant';
+
+    Alert.alert('Delete from collection', `Remove ${leafName} from your collection?`, [
+      {
+        text: 'Cancel',
+        style: 'cancel'
+      },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void onDeleteLeaf(leaf.leafId);
+        }
+      }
+    ]);
+  }
+
   if (selectedLeaf) {
     return (
       <ScrollView style={styles.root} contentContainerStyle={styles.detailWrap}>
@@ -135,7 +153,7 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
           <Pressable
             style={[styles.deleteButton, deletingLeafId === selectedLeaf.leafId && styles.disabledButton]}
             onPress={() => {
-              void onDeleteLeaf(selectedLeaf.leafId);
+              confirmDeleteLeaf(selectedLeaf);
             }}
             disabled={deletingLeafId === selectedLeaf.leafId}
           >

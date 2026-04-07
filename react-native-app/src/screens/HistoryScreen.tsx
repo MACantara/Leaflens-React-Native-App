@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { deleteLeaf, getUserHistory, getUserLeafCount, updateLeafImageVisibility } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
@@ -54,6 +54,24 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
     } finally {
       setDeletingLeafId(undefined);
     }
+  }
+
+  function confirmDeleteLeaf(item: LeafItem): void {
+    const leafName = item.commonName?.trim() || 'this plant';
+
+    Alert.alert('Delete from history', `Remove ${leafName} from your history?`, [
+      {
+        text: 'Cancel',
+        style: 'cancel'
+      },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void onDeleteLeaf(item.leafId);
+        }
+      }
+    ]);
   }
 
   async function onToggleImageVisibility(item: LeafItem): Promise<void> {
@@ -130,7 +148,7 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
               <Pressable
                 style={[styles.deleteButton, deletingLeafId === item.leafId && styles.disabledButton]}
                 onPress={() => {
-                  void onDeleteLeaf(item.leafId);
+                  confirmDeleteLeaf(item);
                 }}
                 disabled={deletingLeafId === item.leafId}
               >
