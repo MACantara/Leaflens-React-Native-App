@@ -41,11 +41,21 @@ function renderActiveTab(
   onSessionUpdated: (nextSession: Session) => void,
   onAccountDeleted: () => void,
   onExploreTag: (tag: string) => void,
+  onOpenLeafDetails: (leafId: number) => void,
+  collectionPrefillLeafId?: number,
+  collectionPrefillVersion?: number,
   explorePrefillTag?: string,
   explorePrefillVersion?: number
 ): React.JSX.Element {
   if (tab === 'home') {
-    return <CollectionScreen session={session} onExploreTag={onExploreTag} />;
+    return (
+      <CollectionScreen
+        session={session}
+        onExploreTag={onExploreTag}
+        preselectedLeafId={collectionPrefillLeafId}
+        preselectedLeafVersion={collectionPrefillVersion}
+      />
+    );
   }
 
   if (tab === 'lens') {
@@ -53,7 +63,7 @@ function renderActiveTab(
   }
 
   if (tab === 'history') {
-    return <HistoryScreen session={session} />;
+    return <HistoryScreen session={session} onOpenLeafDetails={onOpenLeafDetails} />;
   }
 
   if (tab === 'explore') {
@@ -70,6 +80,8 @@ function renderActiveTab(
 export default function App(): React.JSX.Element {
   const [session, setSession] = useState<Session | undefined>();
   const [activeTab, setActiveTab] = useState<AppTab>('home');
+  const [collectionPrefillLeafId, setCollectionPrefillLeafId] = useState<number | undefined>();
+  const [collectionPrefillVersion, setCollectionPrefillVersion] = useState(0);
   const [explorePrefillTag, setExplorePrefillTag] = useState<string | undefined>();
   const [explorePrefillVersion, setExplorePrefillVersion] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -108,6 +120,13 @@ export default function App(): React.JSX.Element {
     setExplorePrefillTag(normalized);
     setExplorePrefillVersion((value) => value + 1);
     setActiveTab('explore');
+    setMenuVisible(false);
+  }
+
+  function handleOpenLeafDetails(leafId: number): void {
+    setCollectionPrefillLeafId(leafId);
+    setCollectionPrefillVersion((value) => value + 1);
+    setActiveTab('home');
     setMenuVisible(false);
   }
 
@@ -193,6 +212,9 @@ export default function App(): React.JSX.Element {
           (nextSession) => setSession(nextSession),
           handleLogout,
           handleExploreTag,
+          handleOpenLeafDetails,
+          collectionPrefillLeafId,
+          collectionPrefillVersion,
           explorePrefillTag,
           explorePrefillVersion
         )}

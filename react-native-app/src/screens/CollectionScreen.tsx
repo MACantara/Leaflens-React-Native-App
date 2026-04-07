@@ -15,6 +15,8 @@ const CARD_MIN_WIDTH = 260;
 interface CollectionScreenProps {
   session: Session;
   onExploreTag?: (tag: string) => void;
+  preselectedLeafId?: number;
+  preselectedLeafVersion?: number;
 }
 
 function toErrorText(error: unknown): string {
@@ -27,7 +29,7 @@ function toErrorText(error: unknown): string {
   return 'Unexpected error.';
 }
 
-export function CollectionScreen({ session, onExploreTag }: CollectionScreenProps): React.JSX.Element {
+export function CollectionScreen({ session, onExploreTag, preselectedLeafId, preselectedLeafVersion }: CollectionScreenProps): React.JSX.Element {
   const { showConfirm } = useAppModal();
   const [leafList, setLeafList] = useState<LeafItem[]>([]);
   const [selectedLeaf, setSelectedLeaf] = useState<LeafItem | undefined>();
@@ -74,6 +76,19 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
   useEffect(() => {
     void runInitialLoad(refreshCollection);
   }, [runInitialLoad, refreshCollection]);
+
+  useEffect(() => {
+    if (!preselectedLeafId) {
+      return;
+    }
+
+    const matchedLeaf = leafList.find((leaf) => leaf.leafId === preselectedLeafId);
+    if (!matchedLeaf) {
+      return;
+    }
+
+    setSelectedLeaf(matchedLeaf);
+  }, [leafList, preselectedLeafId, preselectedLeafVersion]);
 
   function toggleTag(tag: string): void {
     setSelectedTags((current) => {

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { getUserHistory, getUserLeafCount } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
@@ -7,6 +7,7 @@ import { usePullToRefreshController } from '../utils/mobileGestures';
 
 interface HistoryScreenProps {
   session: Session;
+  onOpenLeafDetails?: (leafId: number) => void;
 }
 
 function toErrorText(error: unknown): string {
@@ -19,7 +20,7 @@ function toErrorText(error: unknown): string {
   return 'Unexpected error.';
 }
 
-export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Element {
+export function HistoryScreen({ session, onOpenLeafDetails }: HistoryScreenProps): React.JSX.Element {
   const [history, setHistory] = useState<LeafItem[]>([]);
   const [leafCount, setLeafCount] = useState(0);
   const [error, setError] = useState('');
@@ -60,11 +61,16 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
         }}
         refreshing={refreshing}
         renderItem={({ item }) => (
-          <View style={styles.itemPill}>
+          <Pressable
+            style={styles.itemPill}
+            onPress={() => {
+              onOpenLeafDetails?.(item.leafId);
+            }}
+          >
             <View style={styles.itemTopRow}>
               <Text style={styles.itemText}>{item.commonName || 'Cannot identify plant from image'}</Text>
             </View>
-          </View>
+          </Pressable>
         )}
         ListEmptyComponent={!loading ? <Text style={styles.helperText}>No history yet.</Text> : null}
       />
@@ -114,8 +120,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     flex: 1
-  },
-  disabledButton: {
-    opacity: 0.6
   }
 });
