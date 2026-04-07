@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { getUserHistory, getUserLeafCount } from '../api/leaves';
 import { ApiError } from '../api/client';
+import { EmptyStateCard, StatusBanner } from '../components/StateFeedback';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
 
@@ -48,14 +49,14 @@ export function HistoryScreen({ session, onOpenLeafDetails }: HistoryScreenProps
   return (
     <View style={styles.root}>
       <Text style={styles.title}>Lens History</Text>
-      <Text style={styles.helperText}>Total saved leaves: {leafCount}</Text>
-      {loading && <Text style={styles.helperText}>Loading history...</Text>}
-      {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+      <StatusBanner tone="info" message={`Total saved leaves: ${leafCount}`} />
+      {loading && <StatusBanner tone="loading" message="Loading your activity history..." />}
+      {error.length > 0 && <StatusBanner tone="error" message={error} />}
 
       <FlatList
         data={history}
         keyExtractor={(item) => String(item.leafId)}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, !loading && history.length === 0 ? styles.listContentEmpty : undefined]}
         onRefresh={() => {
           void runPullToRefresh(loadHistory);
         }}
@@ -72,7 +73,15 @@ export function HistoryScreen({ session, onOpenLeafDetails }: HistoryScreenProps
             </View>
           </Pressable>
         )}
-        ListEmptyComponent={!loading ? <Text style={styles.helperText}>No history yet.</Text> : null}
+        ListEmptyComponent={
+          !loading ? (
+            <EmptyStateCard
+              icon="clock"
+              title="No History Yet"
+              description="Your analyzed or saved plants will appear here for quick revisit."
+            />
+          ) : null
+        }
       />
     </View>
   );
@@ -103,6 +112,10 @@ const styles = StyleSheet.create({
   listContent: {
     gap: 12,
     paddingBottom: 18
+  },
+  listContentEmpty: {
+    flexGrow: 1,
+    justifyContent: 'center'
   },
   itemPill: {
     backgroundColor: '#e6f1e6',

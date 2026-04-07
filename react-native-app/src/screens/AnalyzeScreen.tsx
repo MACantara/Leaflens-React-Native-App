@@ -5,6 +5,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { analyzeAndSaveLeaf, analyzeLeaf } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { useAppModal } from '../components/AppModalProvider';
+import { StatusBanner } from '../components/StateFeedback';
 import { LeafAnalysisResponse, Session } from '../types/models';
 
 interface AnalyzeScreenProps {
@@ -248,11 +249,11 @@ export function AnalyzeScreen({ session, onExploreTag }: AnalyzeScreenProps): Re
         </Pressable>
       </View>
 
-      {loading && <Text style={styles.helperText}>Analyzing image...</Text>}
+      {loading && <StatusBanner tone="loading" message="Analyzing image and preparing structured results..." />}
 
-      {!session && <Text style={styles.helperText}>Sign in to save every successful analysis to your history.</Text>}
+      {!session && <StatusBanner tone="info" message="Sign in to automatically save successful analyses to your history." />}
 
-      {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+      {error.length > 0 && <StatusBanner tone="error" message={error} />}
       {result && imageUri && renderResult(result, imageUri, resultImageHeight, onExploreTag)}
     </ScrollView>
   );

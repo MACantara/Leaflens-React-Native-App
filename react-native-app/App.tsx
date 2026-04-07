@@ -13,6 +13,7 @@ import { ExploreScreen } from './src/screens/ExploreScreen';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { AppModalProvider } from './src/components/AppModalProvider';
+import { EmptyStateCard, StatusBanner } from './src/components/StateFeedback';
 import { Session } from './src/types/models';
 import { createEdgeMenuPanResponder } from './src/utils/mobileGestures';
 
@@ -402,7 +403,11 @@ export default function App(): React.JSX.Element {
     <SafeAreaView style={styles.root}>
       <ExpoStatusBar style="dark" />
       <View style={styles.startupWrap}>
-        <Text style={styles.startupText}>{iconsLoadError ? 'Loading app assets...' : 'Loading app...'}</Text>
+        <StatusBanner
+          tone="loading"
+          message={iconsLoadError ? 'Loading app assets. This may take a moment...' : 'Loading app...'}
+          style={styles.startupBanner}
+        />
       </View>
     </SafeAreaView>
   ) : !session ? (
@@ -507,7 +512,7 @@ export default function App(): React.JSX.Element {
               <ScrollView style={styles.searchTagScrollArea} nestedScrollEnabled showsVerticalScrollIndicator>
                 <View style={styles.searchTagGrid}>
                   {globalSearchTagsLoading ? (
-                    <Text style={styles.searchTagHelperText}>Loading filters...</Text>
+                    <StatusBanner tone="loading" message="Loading tags..." />
                   ) : globalSearchAvailableTags.length > 0 ? (
                     globalSearchAvailableTags.map((tag) => {
                       const selected = globalSearchSelectedTags.includes(tag);
@@ -523,7 +528,12 @@ export default function App(): React.JSX.Element {
                       );
                     })
                   ) : (
-                    <Text style={styles.searchTagHelperText}>No filters available.</Text>
+                    <EmptyStateCard
+                      icon="tag"
+                      title="No Tags Available"
+                      description="Analyze and save more plants to unlock searchable tags here."
+                      style={styles.searchEmptyState}
+                    />
                   )}
                 </View>
               </ScrollView>
@@ -647,6 +657,9 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 16,
     fontWeight: '600'
+  },
+  startupBanner: {
+    maxWidth: 360
   },
   bottomNavWrap: {
     backgroundColor: '#f6f6f6',
@@ -888,6 +901,9 @@ const styles = StyleSheet.create({
   searchTagHelperText: {
     color: '#6b7280',
     fontSize: 14
+  },
+  searchEmptyState: {
+    width: '100%'
   },
   searchTagErrorText: {
     color: '#dc2626',

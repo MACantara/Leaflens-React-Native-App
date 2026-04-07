@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { login, register } from '../api/auth';
 import { ApiError } from '../api/client';
+import { StatusBanner } from '../components/StateFeedback';
 import { Session } from '../types/models';
 
 type AuthMode = 'login' | 'register';
@@ -72,6 +73,8 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
       <View style={styles.card}>
         <Text style={styles.formTitle}>{isLoginMode ? 'Login' : 'Register'}</Text>
 
+        {loading && <StatusBanner tone="loading" message="Authenticating your account..." />}
+
         {mode === 'register' && (
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Username</Text>
@@ -120,11 +123,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps): React.JSX.Elem
           </View>
         </View>
 
-        {error.length > 0 && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
+        {error.length > 0 && <StatusBanner tone="error" message={error} />}
 
         <Pressable style={[styles.submitButton, loading && styles.submitButtonDisabled]} onPress={onSubmit} disabled={loading}>
           <Text style={styles.submitButtonText}>{loading ? 'Please wait...' : isLoginMode ? 'Login' : 'Create Account'}</Text>
@@ -241,17 +240,6 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     justifyContent: 'center'
-  },
-  errorBox: {
-    borderRadius: 12,
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 12,
-    paddingVertical: 10
-  },
-  errorText: {
-    color: '#b91c1c',
-    textAlign: 'center',
-    fontWeight: '600'
   },
   submitButton: {
     marginTop: 4,

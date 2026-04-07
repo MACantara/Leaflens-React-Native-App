@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { exploreLeaves, getLeafImageSource, saveExploreLeaf } from '../api/leaves';
 import { ApiError } from '../api/client';
+import { EmptyStateCard, StatusBanner } from '../components/StateFeedback';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
 import { Feather } from '@expo/vector-icons';
@@ -187,13 +188,14 @@ export function ExploreScreen({
 
   return (
     <View style={styles.root}>
-      {loading && <Text style={styles.helperText}>Loading leaves...</Text>}
-      {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+      {loading && <StatusBanner tone="loading" message="Loading leaves from the catalog..." />}
+      {savingLeafId !== undefined && !loading && <StatusBanner tone="loading" message="Saving plant to your collection..." />}
+      {error.length > 0 && <StatusBanner tone="error" message={error} />}
 
       <FlatList
         data={items}
         keyExtractor={(item) => String(item.leafId)}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, !loading && items.length === 0 ? styles.listContentEmpty : undefined]}
         onRefresh={() => {
           void runPullToRefresh(loadExploreData);
         }}
@@ -236,7 +238,15 @@ export function ExploreScreen({
             )}
           </View>
         )}
-        ListEmptyComponent={!loading ? <Text style={styles.helperText}>No leaves found.</Text> : null}
+        ListEmptyComponent={
+          !loading ? (
+            <EmptyStateCard
+              icon="search"
+              title="No Plants Match This Search"
+              description="Try another keyword, remove some tags, or search for a broader condition."
+            />
+          ) : null
+        }
       />
     </View>
   );
@@ -254,6 +264,10 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingTop: 2,
     paddingBottom: 22
+  },
+  listContentEmpty: {
+    flexGrow: 1,
+    justifyContent: 'center'
   },
   card: {
     backgroundColor: '#ffffff',

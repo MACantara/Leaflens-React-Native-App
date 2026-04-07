@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { deleteLeaf, getLeafImageSource, getUserHistory, updateLeafImageVisibility } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { useAppModal } from '../components/AppModalProvider';
+import { EmptyStateCard, StatusBanner } from '../components/StateFeedback';
 import { LeafItem, Session } from '../types/models';
 
 interface PlantDetailsScreenProps {
@@ -138,8 +139,10 @@ export function PlantDetailsScreen({
         <Feather name="arrow-left" size={30} color="#111827" />
       </Pressable>
 
-      {loading && <Text style={styles.helperText}>Loading details...</Text>}
-      {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+      {loading && <StatusBanner tone="loading" message="Loading plant details..." />}
+      {updatingVisibilityLeafId !== undefined && <StatusBanner tone="loading" message="Updating image visibility..." />}
+      {deletingLeafId !== undefined && <StatusBanner tone="loading" message="Removing this plant from your collection..." />}
+      {error.length > 0 && <StatusBanner tone="error" message={error} />}
 
       {leaf ? (
         <View style={styles.detailCard}>
@@ -276,7 +279,11 @@ export function PlantDetailsScreen({
       ) : (
         !loading && (
           <View style={styles.detailCard}>
-            <Text style={styles.helperText}>Unable to load this plant detail.</Text>
+            <EmptyStateCard
+              icon="slash"
+              title="Plant Details Unavailable"
+              description="This item may have been deleted or is no longer accessible."
+            />
           </View>
         )
       )}

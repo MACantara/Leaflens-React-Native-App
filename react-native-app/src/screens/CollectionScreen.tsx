@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { getLeafImageSource, getUserHistory } from '../api/leaves';
 import { ApiError } from '../api/client';
+import { EmptyStateCard, StatusBanner } from '../components/StateFeedback';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
 
@@ -151,8 +152,8 @@ export function CollectionScreen({
     <View style={styles.root}>
       <Text style={styles.title}>Your Collection</Text>
 
-      {loading && <Text style={styles.helperText}>Loading...</Text>}
-      {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+      {loading && <StatusBanner tone="loading" message="Loading your saved plants..." />}
+      {error.length > 0 && <StatusBanner tone="error" message={error} />}
 
       <FlatList
         data={leafList}
@@ -162,7 +163,11 @@ export function CollectionScreen({
         snapToInterval={snapInterval}
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => String(item.leafId)}
-        contentContainerStyle={[styles.listContent, { paddingRight: ROOT_HORIZONTAL_PADDING + 2 }]}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingRight: ROOT_HORIZONTAL_PADDING + 2 },
+          !loading && leafList.length === 0 ? styles.listContentEmpty : undefined
+        ]}
         onRefresh={() => {
           void runPullToRefresh(refreshCollection);
         }}
@@ -185,7 +190,17 @@ export function CollectionScreen({
             <Text style={styles.cardMeta}>{item.scientificName || 'N/A'}</Text>
           </Pressable>
         )}
-        ListEmptyComponent={!loading ? <Text style={styles.helperText}>No saved leaves found.</Text> : null}
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyWrap}>
+              <EmptyStateCard
+                icon="bookmark"
+                title="No Saved Plants Yet"
+                description="Analyze and save a plant to start building your personal collection."
+              />
+            </View>
+          ) : null
+        }
       />
     </View>
   );
@@ -215,6 +230,14 @@ const styles = StyleSheet.create({
   listContent: {
     gap: 16,
     paddingBottom: 10
+  },
+  listContentEmpty: {
+    flexGrow: 1,
+    justifyContent: 'center'
+  },
+  emptyWrap: {
+    width: CARD_MIN_WIDTH,
+    alignSelf: 'center'
   },
   card: {
     backgroundColor: '#ffffff',

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { deleteUserProfile, getUserProfile, updateUserProfile } from '../api/user';
 import { ApiError } from '../api/client';
 import { useAppModal } from '../components/AppModalProvider';
+import { StatusBanner } from '../components/StateFeedback';
 import { Session } from '../types/models';
 
 interface ProfileScreenProps {
@@ -106,9 +107,11 @@ export function ProfileScreen({ session, onSessionUpdated, onAccountDeleted }: P
     <View style={styles.root}>
       <Text style={styles.title}>Profile</Text>
 
-      {loading && <Text style={styles.helperText}>Loading profile...</Text>}
-      {message.length > 0 && <Text style={styles.successText}>{message}</Text>}
-      {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+      {loading && <StatusBanner tone="loading" message="Loading your profile details..." />}
+      {saving && !loading && <StatusBanner tone="loading" message="Saving profile changes..." />}
+      {deleting && !loading && <StatusBanner tone="loading" message="Deleting account..." />}
+      {message.length > 0 && <StatusBanner tone="success" message={message} />}
+      {error.length > 0 && <StatusBanner tone="error" message={error} />}
 
       <View style={styles.card}>
         <Text style={styles.label}>Username</Text>
