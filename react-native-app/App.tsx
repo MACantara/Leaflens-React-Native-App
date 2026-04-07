@@ -16,6 +16,7 @@ import { Session } from './src/types/models';
 import { createEdgeMenuPanResponder } from './src/utils/mobileGestures';
 
 type AppTab = 'home' | 'lens' | 'history' | 'explore' | 'profile' | 'about';
+type GlobalSearchScope = 'collection' | 'explore';
 
 interface MenuItem {
   key: AppTab | 'logout';
@@ -111,6 +112,7 @@ export default function App(): React.JSX.Element {
   const [selectedLeafVersion, setSelectedLeafVersion] = useState(0);
   const [globalSearchVisible, setGlobalSearchVisible] = useState(false);
   const [globalSearchKeyword, setGlobalSearchKeyword] = useState('');
+  const [globalSearchScope, setGlobalSearchScope] = useState<GlobalSearchScope>('collection');
   const [collectionSearchKeyword, setCollectionSearchKeyword] = useState('');
   const [collectionSearchVersion, setCollectionSearchVersion] = useState(0);
   const [exploreSearchKeyword, setExploreSearchKeyword] = useState('');
@@ -132,6 +134,7 @@ export default function App(): React.JSX.Element {
     setSession(undefined);
     setSelectedLeafId(undefined);
     setGlobalSearchKeyword('');
+    setGlobalSearchScope('collection');
     setGlobalSearchVisible(false);
     setActiveTab('home');
     setMenuVisible(false);
@@ -179,7 +182,21 @@ export default function App(): React.JSX.Element {
 
   function openGlobalSearch(): void {
     setMenuVisible(false);
+    setGlobalSearchScope(activeTab === 'explore' ? 'explore' : 'collection');
     setGlobalSearchVisible(true);
+  }
+
+  function toggleGlobalSearchScope(): void {
+    setGlobalSearchScope((current) => (current === 'explore' ? 'collection' : 'explore'));
+  }
+
+  function runGlobalSearch(): void {
+    if (globalSearchScope === 'explore') {
+      openPublicExploreSearch();
+      return;
+    }
+
+    openCollectionSearch();
   }
 
   function openCollectionSearch(): void {
@@ -260,29 +277,56 @@ export default function App(): React.JSX.Element {
 
       <Modal visible={globalSearchVisible} transparent animationType="fade" onRequestClose={() => setGlobalSearchVisible(false)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setGlobalSearchVisible(false)}>
-          <Pressable style={styles.searchLauncherCard} onPress={() => undefined}>
-            <Text style={styles.searchLauncherTitle}>Search Plants</Text>
-            <Text style={styles.searchLauncherSubtitle}>Use search from anywhere in the app.</Text>
+          <Pressable style={[styles.searchOverlaySheet, { paddingTop: headerTopPadding + 56 }]} onPress={() => undefined}>
+            <View style={styles.searchBarCard}>
+              <Pressable style={styles.searchRoundButton} onPress={() => setGlobalSearchVisible(false)}>
+                <Feather name="x" size={28} color="#111111" />
+              </Pressable>
 
-            <TextInput
-              style={styles.searchLauncherInput}
-              placeholder="Type a plant name, habitat, or use"
-              placeholderTextColor="#94a3b8"
-              value={globalSearchKeyword}
-              onChangeText={setGlobalSearchKeyword}
-              returnKeyType="search"
-              onSubmitEditing={openPublicExploreSearch}
-            />
+              <TextInput
+                style={styles.searchBarInput}
+                placeholder="Search..."
+                placeholderTextColor="#b0b5bc"
+                value={globalSearchKeyword}
+                onChangeText={setGlobalSearchKeyword}
+                returnKeyType="search"
+                autoFocus
+                onSubmitEditing={runGlobalSearch}
+              />
 
-            <Pressable style={styles.searchLauncherButton} onPress={openCollectionSearch}>
-              <Feather name="home" size={16} color="#111827" />
-              <Text style={styles.searchLauncherButtonLabel}>Search in Your Collection</Text>
-            </Pressable>
+              <Pressable style={styles.searchRoundButton} onPress={runGlobalSearch}>
+                <Feather name="search" size={28} color="#111111" />
+              </Pressable>
+            </View>
 
-            <Pressable style={styles.searchLauncherButton} onPress={openPublicExploreSearch}>
-              <Feather name="search" size={16} color="#111827" />
-              <Text style={styles.searchLauncherButtonLabel}>Search Public Images</Text>
-            </Pressable>
+            <View style={styles.searchFilterCard}>
+              <View style={styles.searchFilterHeaderRow}>
+                <View style={styles.searchFilterTitleWrap}>
+                  <Feather name="sliders" size={34} color="#4b5563" />
+                  <Text style={styles.searchFilterTitle}>Filters</Text>
+                </View>
+
+                <Pressable
+                  style={[styles.searchScopeButton, globalSearchScope === 'explore' && styles.searchScopeButtonActive]}
+                  onPress={toggleGlobalSearchScope}
+                >
+                  <Feather
+                    name={globalSearchScope === 'explore' ? 'compass' : 'home'}
+                    size={22}
+                    color={globalSearchScope === 'explore' ? '#0b3f1d' : '#111827'}
+                  />
+                  <Text style={[styles.searchScopeButtonText, globalSearchScope === 'explore' && styles.searchScopeButtonTextActive]}>
+                    {globalSearchScope === 'explore' ? 'Explore' : 'Collection'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.searchScopeDescription}>
+                {globalSearchScope === 'explore'
+                  ? 'Explore mode is active. Tag filters are hidden.'
+                  : 'Collection mode is active. Search runs on your saved plants.'}
+              </Text>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -456,49 +500,98 @@ const styles = StyleSheet.create({
   drawerLogout: {
     color: '#b91c1c'
   },
-  searchLauncherCard: {
-    width: '88%',
-    maxWidth: 360,
-    marginTop: 90,
-    alignSelf: 'center',
-    borderRadius: 18,
-    backgroundColor: '#ffffff',
-    padding: 14,
+  searchOverlaySheet: {
+    paddingHorizontal: 16,
     gap: 10
   },
-  searchLauncherTitle: {
-    color: '#111827',
-    fontSize: 18,
-    fontWeight: '800'
-  },
-  searchLauncherSubtitle: {
-    color: '#64748b',
-    fontSize: 13
-  },
-  searchLauncherInput: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 12,
-    backgroundColor: '#f8fafc',
-    minHeight: 44,
-    paddingHorizontal: 12,
-    color: '#111827',
-    fontSize: 14
-  },
-  searchLauncherButton: {
+  searchBarCard: {
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#f8fafc'
+    gap: 10,
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 10,
+    elevation: 4
   },
-  searchLauncherButtonLabel: {
+  searchRoundButton: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#f1e5df',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  searchBarInput: {
+    flex: 1,
+    minHeight: 54,
+    borderRadius: 27,
+    borderWidth: 1,
+    borderColor: '#d5d8dd',
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 24,
     color: '#111827',
-    fontSize: 14,
+    fontSize: 19,
+    fontWeight: '500'
+  },
+  searchFilterCard: {
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    gap: 12,
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 10,
+    elevation: 3
+  },
+  searchFilterHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  searchFilterTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+  searchFilterTitle: {
+    color: '#1f2937',
+    fontSize: 45 / 2,
+    fontWeight: '400'
+  },
+  searchScopeButton: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#eef2f7',
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  searchScopeButtonActive: {
+    backgroundColor: '#67ce65',
+    borderColor: '#56b856'
+  },
+  searchScopeButtonText: {
+    color: '#111827',
+    fontSize: 20,
+    fontWeight: '500'
+  },
+  searchScopeButtonTextActive: {
+    color: '#0b3f1d',
     fontWeight: '700'
+  },
+  searchScopeDescription: {
+    color: '#4b5563',
+    fontSize: 16,
+    lineHeight: 24
   }
 });
