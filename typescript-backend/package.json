@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "images:backfill-1080p": "tsx src/scripts/resizeStorageImagesTo1080p.ts",
     "db:migrate:delete-non-applicable-leaves": "tsx src/scripts/deleteNonApplicableLeaves.ts",
-    "db:migrate:remove-ai-references": "tsx src/scripts/removeAiGeneratedReferences.ts"
+    "db:migrate:remove-ai-references": "tsx src/scripts/removeAiGeneratedReferences.ts",
+    "db:wipe:plants": "tsx src/scripts/wipeAllPlantRecords.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1024.0",
