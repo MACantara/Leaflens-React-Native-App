@@ -24,6 +24,7 @@ export interface LeafDoc {
   origin: string;
   usage: string;
   habitat: string;
+  isGrownInCavite?: boolean;
   imageData?: Buffer;
   imageFilename: string;
   imageContentType: string;
