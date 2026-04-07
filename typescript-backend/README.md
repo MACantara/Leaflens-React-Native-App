@@ -39,6 +39,7 @@ This folder contains the TypeScript/Node.js Leaflens backend API.
 - `npm run images:backfill-1080p`: Resize all bucket images to 1080p and transcode the image bytes to WebP (uses temporary files and removes them automatically)
 - `npm run db:migrate:delete-non-applicable-leaves`: Delete non-applicable leaf records and remove their stored images
 - `npm run db:migrate:remove-ai-references`: Remove previously stored AI-generated references from leaf records
+- `npm run db:migrate:backfill-image-visibility`: Backfill `ownerUserId` and `isImagePublic` on legacy leaves
 - `npm run db:wipe:plants -- --force`: Delete all plant records and related stored images (testing helper)
 
 ## Local setup

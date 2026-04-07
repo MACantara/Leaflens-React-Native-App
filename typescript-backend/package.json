@@ -11,6 +11,7 @@
     "images:backfill-1080p": "tsx src/scripts/resizeStorageImagesTo1080p.ts",
     "db:migrate:delete-non-applicable-leaves": "tsx src/scripts/deleteNonApplicableLeaves.ts",
     "db:migrate:remove-ai-references": "tsx src/scripts/removeAiGeneratedReferences.ts",
+    "db:migrate:backfill-image-visibility": "tsx src/scripts/backfillLeafImageVisibilityMetadata.ts",
     "db:wipe:plants": "tsx src/scripts/wipeAllPlantRecords.ts"
   },
   "dependencies": {
