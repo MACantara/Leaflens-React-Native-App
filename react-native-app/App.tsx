@@ -46,6 +46,7 @@ function renderActiveTab(
   onCloseLeafDetails: () => void,
   selectedLeafId?: number,
   selectedLeafVersion?: number,
+  exploreSearchLaunchVersion?: number,
   explorePrefillTag?: string,
   explorePrefillVersion?: number
 ): React.JSX.Element {
@@ -75,7 +76,14 @@ function renderActiveTab(
   }
 
   if (tab === 'explore') {
-    return <ExploreScreen session={session} preselectedTag={explorePrefillTag} preselectedTagVersion={explorePrefillVersion} />;
+    return (
+      <ExploreScreen
+        session={session}
+        preselectedTag={explorePrefillTag}
+        preselectedTagVersion={explorePrefillVersion}
+        openSearchVersion={exploreSearchLaunchVersion}
+      />
+    );
   }
 
   if (tab === 'profile') {
@@ -90,6 +98,8 @@ export default function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [selectedLeafId, setSelectedLeafId] = useState<number | undefined>();
   const [selectedLeafVersion, setSelectedLeafVersion] = useState(0);
+  const [globalSearchVisible, setGlobalSearchVisible] = useState(false);
+  const [exploreSearchLaunchVersion, setExploreSearchLaunchVersion] = useState(0);
   const [explorePrefillTag, setExplorePrefillTag] = useState<string | undefined>();
   const [explorePrefillVersion, setExplorePrefillVersion] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -106,6 +116,7 @@ export default function App(): React.JSX.Element {
   function handleLogout(): void {
     setSession(undefined);
     setSelectedLeafId(undefined);
+    setGlobalSearchVisible(false);
     setActiveTab('home');
     setMenuVisible(false);
   }
@@ -121,6 +132,7 @@ export default function App(): React.JSX.Element {
     }
 
     setActiveTab(itemKey);
+    setGlobalSearchVisible(false);
     setMenuVisible(false);
   }
 
@@ -133,6 +145,7 @@ export default function App(): React.JSX.Element {
     setExplorePrefillTag(normalized);
     setExplorePrefillVersion((value) => value + 1);
     setActiveTab('explore');
+    setGlobalSearchVisible(false);
     setMenuVisible(false);
   }
 
@@ -140,11 +153,29 @@ export default function App(): React.JSX.Element {
     setSelectedLeafId(leafId);
     setSelectedLeafVersion((value) => value + 1);
     setActiveTab('home');
+    setGlobalSearchVisible(false);
     setMenuVisible(false);
   }
 
   function handleCloseLeafDetails(): void {
     setSelectedLeafId(undefined);
+  }
+
+  function openGlobalSearch(): void {
+    setMenuVisible(false);
+    setGlobalSearchVisible(true);
+  }
+
+  function openCollectionSearch(): void {
+    setSelectedLeafId(undefined);
+    setActiveTab('home');
+    setGlobalSearchVisible(false);
+  }
+
+  function openPublicExploreSearch(): void {
+    setActiveTab('explore');
+    setExploreSearchLaunchVersion((value) => value + 1);
+    setGlobalSearchVisible(false);
   }
 
   function canRunGesture(): boolean {
@@ -206,6 +237,25 @@ export default function App(): React.JSX.Element {
         </Pressable>
       </Modal>
 
+      <Modal visible={globalSearchVisible} transparent animationType="fade" onRequestClose={() => setGlobalSearchVisible(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setGlobalSearchVisible(false)}>
+          <Pressable style={styles.searchLauncherCard} onPress={() => undefined}>
+            <Text style={styles.searchLauncherTitle}>Search Plants</Text>
+            <Text style={styles.searchLauncherSubtitle}>Use search from anywhere in the app.</Text>
+
+            <Pressable style={styles.searchLauncherButton} onPress={openCollectionSearch}>
+              <Feather name="home" size={16} color="#111827" />
+              <Text style={styles.searchLauncherButtonLabel}>Search in Your Collection</Text>
+            </Pressable>
+
+            <Pressable style={styles.searchLauncherButton} onPress={openPublicExploreSearch}>
+              <Feather name="search" size={16} color="#111827" />
+              <Text style={styles.searchLauncherButtonLabel}>Search Public Images</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <View style={[styles.header, { paddingTop: headerTopPadding }]}>
         <Pressable style={styles.circleIconButton} onPress={() => setMenuVisible(true)}>
           <Feather name="menu" size={24} color="#1f2937" />
@@ -216,7 +266,7 @@ export default function App(): React.JSX.Element {
           <Text style={styles.brandLine2}>{welcomeText}</Text>
         </View>
 
-        <Pressable style={styles.circleIconButton} onPress={() => setActiveTab('explore')}>
+        <Pressable style={styles.circleIconButton} onPress={openGlobalSearch}>
           <Feather name="search" size={22} color="#1f2937" />
         </Pressable>
       </View>
@@ -233,6 +283,7 @@ export default function App(): React.JSX.Element {
           handleCloseLeafDetails,
           selectedLeafId,
           selectedLeafVersion,
+            exploreSearchLaunchVersion,
           explorePrefillTag,
           explorePrefillVersion
         )}
@@ -370,5 +421,40 @@ const styles = StyleSheet.create({
   },
   drawerLogout: {
     color: '#b91c1c'
+  },
+  searchLauncherCard: {
+    width: '88%',
+    maxWidth: 360,
+    marginTop: 90,
+    alignSelf: 'center',
+    borderRadius: 18,
+    backgroundColor: '#ffffff',
+    padding: 14,
+    gap: 10
+  },
+  searchLauncherTitle: {
+    color: '#111827',
+    fontSize: 18,
+    fontWeight: '800'
+  },
+  searchLauncherSubtitle: {
+    color: '#64748b',
+    fontSize: 13
+  },
+  searchLauncherButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#f8fafc'
+  },
+  searchLauncherButtonLabel: {
+    color: '#111827',
+    fontSize: 14,
+    fontWeight: '700'
   }
 });

@@ -18,6 +18,7 @@ interface ExploreScreenProps {
   session?: Session;
   preselectedTag?: string;
   preselectedTagVersion?: number;
+  openSearchVersion?: number;
 }
 
 function errorToText(error: unknown): string {
@@ -30,8 +31,9 @@ function errorToText(error: unknown): string {
   return 'Unexpected error.';
 }
 
-export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }: ExploreScreenProps): React.JSX.Element {
+export function ExploreScreen({ session, preselectedTag, preselectedTagVersion, openSearchVersion }: ExploreScreenProps): React.JSX.Element {
   const [keyword, setKeyword] = useState('');
+  const [searchPopupVisible, setSearchPopupVisible] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [items, setItems] = useState<LeafItem[]>([]);
   const [error, setError] = useState('');
@@ -135,6 +137,14 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
     });
   }, [fetchExplore, preselectedTag, preselectedTagVersion, runInitialLoad]);
 
+  useEffect(() => {
+    if (openSearchVersion === undefined) {
+      return;
+    }
+
+    setSearchPopupVisible(true);
+  }, [openSearchVersion]);
+
   function toggleTag(tag: string): void {
     setSelectedTags((current) => {
       if (current.includes(tag)) {
@@ -145,31 +155,52 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
     });
   }
 
+  function submitSearch(): void {
+    void runInitialLoad(loadExploreData);
+  }
+
   return (
     <View style={styles.root}>
-      <View style={styles.searchFloatingCard}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search..."
-          placeholderTextColor="#9ca3af"
-          value={keyword}
-          onChangeText={setKeyword}
-          returnKeyType="search"
-          onSubmitEditing={() => {
-            void runInitialLoad(loadExploreData);
-          }}
-        />
+      {searchPopupVisible && (
+        <Pressable style={styles.searchOverlay} onPress={() => setSearchPopupVisible(false)}>
+          <Pressable style={styles.searchPopupCard} onPress={() => undefined}>
+            <View style={styles.searchPopupHeader}>
+              <Text style={styles.searchPopupTitle}>Search Public Images</Text>
+              <Pressable style={styles.searchCloseButton} onPress={() => setSearchPopupVisible(false)}>
+                <Feather name="x" size={18} color="#334155" />
+              </Pressable>
+            </View>
 
-        <Pressable
-          style={[styles.iconCircleButton, loading && styles.searchButtonDisabled]}
-          onPress={() => {
-            void runInitialLoad(loadExploreData);
-          }}
-          disabled={loading}
-        >
-          <Feather name="search" size={27} color="#111111" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by plant name, habitat, or usage"
+              placeholderTextColor="#9ca3af"
+              value={keyword}
+              onChangeText={setKeyword}
+              returnKeyType="search"
+              autoFocus
+              onSubmitEditing={submitSearch}
+            />
+
+            <View style={styles.searchActionRow}>
+              <Pressable
+                style={styles.clearButton}
+                onPress={() => {
+                  setKeyword('');
+                  submitSearch();
+                }}
+              >
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </Pressable>
+
+              <Pressable style={[styles.searchActionButton, loading && styles.searchButtonDisabled]} onPress={submitSearch} disabled={loading}>
+                <Feather name="search" size={16} color="#111111" />
+                <Text style={styles.searchActionButtonText}>{loading ? 'Loading' : 'Search'}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
         </Pressable>
-      </View>
+      )}
 
       <View style={styles.filtersFloatingCard}>
         <View style={styles.filtersHeaderRow}>
@@ -181,12 +212,11 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
           <Pressable
             style={[styles.exploreButton, loading && styles.searchButtonDisabled]}
             onPress={() => {
-              void runInitialLoad(loadExploreData);
+              setSearchPopupVisible((current) => !current);
             }}
-            disabled={loading}
           >
-            <Feather name="compass" size={21} color="#111111" />
-            <Text style={styles.exploreButtonText}>{loading ? 'Loading' : 'Explore'}</Text>
+            <Feather name={searchPopupVisible ? 'x' : 'search'} size={21} color="#111111" />
+            <Text style={styles.exploreButtonText}>{searchPopupVisible ? 'Close Search' : 'Explore Search'}</Text>
           </Pressable>
         </View>
 
@@ -264,38 +294,89 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     gap: 10
   },
-  searchFloatingCard: {
+  searchOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.2)',
+    zIndex: 10,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 28
+  },
+  searchPopupCard: {
     backgroundColor: '#ffffff',
     borderRadius: 24,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 10,
     shadowColor: '#000000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 10,
-    elevation: 3
+    shadowOpacity: 0.14,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 14,
+    elevation: 5
   },
-  iconCircleButton: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: '#f4e9e4',
+  searchPopupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  searchPopupTitle: {
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '700'
+  },
+  searchCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center'
   },
   searchInput: {
-    flex: 1,
+    width: '100%',
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 999,
-    minHeight: 58,
+    borderRadius: 14,
+    minHeight: 52,
     paddingHorizontal: 14,
     backgroundColor: '#f9fafb',
-    fontSize: 18,
+    fontSize: 15,
     color: '#111827'
+  },
+  searchActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10
+  },
+  clearButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8fafc'
+  },
+  clearButtonText: {
+    color: '#475569',
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  searchActionButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 12,
+    backgroundColor: '#dfeedd',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6
+  },
+  searchActionButtonText: {
+    color: '#111111',
+    fontSize: 14,
+    fontWeight: '700'
   },
   searchButtonDisabled: {
     opacity: 0.65
