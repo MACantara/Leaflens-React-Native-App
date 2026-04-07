@@ -8,13 +8,15 @@ import {
   TextInput,
   View
 } from 'react-native';
-import { exploreLeaves, getLeafImageUrl, saveExploreLeaf } from '../api/leaves';
+import { exploreLeaves, getLeafImageSource, saveExploreLeaf } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
 
 interface ExploreScreenProps {
   session?: Session;
+  preselectedTag?: string;
+  preselectedTagVersion?: number;
 }
 
 function errorToText(error: unknown): string {
@@ -27,23 +29,29 @@ function errorToText(error: unknown): string {
   return 'Unexpected error.';
 }
 
-export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Element {
+export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }: ExploreScreenProps): React.JSX.Element {
   const [keyword, setKeyword] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [items, setItems] = useState<LeafItem[]>([]);
   const [error, setError] = useState('');
   const [savingLeafId, setSavingLeafId] = useState<number | undefined>();
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
 
   const loadExploreData = useCallback(async (): Promise<void> => {
+    if (!session) {
+      setItems([]);
+      return;
+    }
+
     setError('');
 
     try {
-      const results = await exploreLeaves(keyword.trim() || undefined);
+      const results = await exploreLeaves(session.token, keyword.trim() || undefined, selectedTags);
       setItems(results);
     } catch (loadError) {
       setError(errorToText(loadError));
     }
-  }, [keyword]);
+  }, [keyword, selectedTags, session]);
 
   async function onSaveLeaf(leafId: number): Promise<void> {
     if (!session) {
@@ -66,6 +74,34 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
   useEffect(() => {
     void runInitialLoad(loadExploreData);
   }, [runInitialLoad, loadExploreData]);
+
+  useEffect(() => {
+    if (!preselectedTag) {
+      return;
+    }
+
+    const normalized = preselectedTag.trim().toLowerCase();
+    if (!normalized) {
+      return;
+    }
+
+    setKeyword('');
+    setSelectedTags([normalized]);
+  }, [preselectedTag, preselectedTagVersion]);
+
+  function toggleTag(tag: string): void {
+    setSelectedTags((current) => {
+      if (current.includes(tag)) {
+        return current.filter((entry) => entry !== tag);
+      }
+
+      return [...current, tag];
+    });
+  }
+
+  function clearTags(): void {
+    setSelectedTags([]);
+  }
 
   return (
     <View style={styles.root}>
@@ -97,6 +133,19 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
             <Text style={styles.searchButtonLabel}>{loading ? 'Searching...' : 'Search'}</Text>
           </Pressable>
         </View>
+
+        {selectedTags.length > 0 && (
+          <View style={styles.selectedTagWrap}>
+            {selectedTags.map((tag) => (
+              <Pressable key={tag} style={styles.tagPillActive} onPress={() => toggleTag(tag)}>
+                <Text style={styles.tagPillActiveText}>#{tag}</Text>
+              </Pressable>
+            ))}
+            <Pressable style={styles.clearTagButton} onPress={clearTags}>
+              <Text style={styles.clearTagButtonText}>Clear tags</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {loading && <Text style={styles.helperText}>Loading leaves...</Text>}
@@ -113,7 +162,7 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
         renderItem={({ item }) => (
           <View style={styles.card}>
             {item.imageFilename || item.imageContentType || item.imageSize ? (
-              <Image source={{ uri: getLeafImageUrl(item.leafId) }} style={styles.leafImage} />
+              <Image source={getLeafImageSource(item.leafId, session?.token ?? '')} style={styles.leafImage} />
             ) : (
               <View style={styles.leafImagePlaceholder}>
                 <Text style={styles.leafImagePlaceholderText}>No image available</Text>
@@ -126,6 +175,16 @@ export function ExploreScreen({ session }: ExploreScreenProps): React.JSX.Elemen
 
             <Text style={styles.leafMetaLabel}>Uses</Text>
             <Text style={styles.leafMetaValue}>{item.usage || 'N/A'}</Text>
+
+            {Array.isArray(item.tags) && item.tags.length > 0 && (
+              <View style={styles.itemTagsWrap}>
+                {item.tags.map((tag) => (
+                  <Pressable key={`${item.leafId}-${tag}`} style={styles.tagPill} onPress={() => toggleTag(String(tag).toLowerCase())}>
+                    <Text style={styles.tagPillText}>#{tag}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
 
             <Pressable
               style={[styles.saveButton, savingLeafId === item.leafId && styles.saveButtonDisabled]}
@@ -211,6 +270,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700'
   },
+  selectedTagWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8
+  },
+  tagPillActive: {
+    borderRadius: 999,
+    backgroundColor: '#dfeedd',
+    borderWidth: 1,
+    borderColor: '#8bc34a',
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  tagPillActiveText: {
+    color: '#14532d',
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  clearTagButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+    backgroundColor: '#fff1f2',
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  clearTagButtonText: {
+    color: '#b91c1c',
+    fontSize: 12,
+    fontWeight: '700'
+  },
   listContent: {
     gap: 12,
     paddingTop: 2,
@@ -264,6 +354,23 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 14,
     lineHeight: 20
+  },
+  itemTagsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8
+  },
+  tagPill: {
+    borderRadius: 999,
+    backgroundColor: '#e2e8f0',
+    paddingHorizontal: 10,
+    paddingVertical: 5
+  },
+  tagPillText: {
+    color: '#1f2937',
+    fontSize: 12,
+    fontWeight: '600'
   },
   saveButton: {
     marginTop: 10,
