@@ -6,6 +6,7 @@ import { isApplicableAnalysis } from '../services/analysisApplicability.js';
 import { analyzeLeafImage } from '../services/aiAnalyzer.js';
 import { normalizeImageBufferTo1080p } from '../services/imageProcessing.js';
 import { deleteLeafImageFromStorage, uploadLeafImageToStorage } from '../services/objectStorage.js';
+import { resolveCaviteGrowthFlag } from '../services/cavitePlants.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { HttpError } from '../utils/errors.js';
 import { ensureUserCollection } from '../utils/collection.js';
@@ -34,7 +35,16 @@ leafAnalyzerRouter.post(
       });
 
       const analysis = await analyzeLeafImage(normalizedImage.buffer, normalizedImage.contentType);
-      res.json(analysis);
+      const enriched = {
+        ...analysis,
+        isGrownInCavite: resolveCaviteGrowthFlag({
+          commonName: analysis.commonName,
+          scientificName: analysis.scientificName,
+          modelValue: analysis.isGrownInCavite
+        })
+      };
+
+      res.json(enriched);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       res.status(500).json({
@@ -84,11 +94,19 @@ leafAnalyzerRouter.post(
     });
 
     const analysis = await analyzeLeafImage(normalizedImage.buffer, normalizedImage.contentType);
+    const enriched = {
+      ...analysis,
+      isGrownInCavite: resolveCaviteGrowthFlag({
+        commonName: analysis.commonName,
+        scientificName: analysis.scientificName,
+        modelValue: analysis.isGrownInCavite
+      })
+    };
 
-    if (!isApplicableAnalysis(analysis)) {
+    if (!isApplicableAnalysis(enriched)) {
       res.json({
         message: 'Leaf is not applicable and was not saved.',
-        analysis,
+        analysis: enriched,
         userId
       });
       return;
@@ -96,12 +114,12 @@ leafAnalyzerRouter.post(
 
     const leafId = await nextSequence('leafId');
     const now = new Date();
-    const normalizedTags = analysis.tags
+    const normalizedTags = enriched.tags
       .map((tag) => tag.trim())
       .filter((tag) => tag.length > 0)
       .map((tag) => tag.toLowerCase())
       .filter((tag, index, values) => values.indexOf(tag) === index);
-    const normalizedReferences = analysis.references
+    const normalizedReferences = enriched.references
       .map((ref) => ({
         url: String(ref.url ?? '').trim(),
         title: String(ref.title ?? ref.url ?? '').trim()
@@ -121,11 +139,12 @@ leafAnalyzerRouter.post(
 
     const leafDoc: LeafDoc = {
       leafId,
-      commonName: analysis.commonName,
-      scientificName: analysis.scientificName || '',
-      origin: analysis.origin || '',
-      usage: analysis.uses || '',
-      habitat: analysis.habitat || '',
+      commonName: enriched.commonName,
+      scientificName: enriched.scientificName || '',
+      origin: enriched.origin || '',
+      usage: enriched.uses || '',
+      habitat: enriched.habitat || '',
+      isGrownInCavite: enriched.isGrownInCavite,
       imageFilename: uploadedImage.filename,
       imageContentType: uploadedImage.contentType,
       imageSize: uploadedImage.size,
@@ -156,7 +175,7 @@ leafAnalyzerRouter.post(
 
     res.json({
       message: 'Leaf analyzed and saved successfully',
-      analysis,
+      analysis: enriched,
       userId
     });
   })
