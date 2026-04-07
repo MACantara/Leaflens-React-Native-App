@@ -6,7 +6,7 @@
   "scripts": {
     "start": "expo start",
     "start:dev": "expo start --clear",
-    "android": "expo run:android",
+    "android": "node ./scripts/run-android-dev.mjs",
     "android:check": "powershell -ExecutionPolicy Bypass -File ./scripts/check-android-setup.ps1",
     "build:apk-local": "node ./scripts/build-apk-local.mjs --clean",
     "build:apk-local:fast": "node ./scripts/build-apk-local.mjs --no-clean",

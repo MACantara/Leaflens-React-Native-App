@@ -109,12 +109,17 @@ npm run build:apk-local:gradle
 Expected APK output:
 - android/app/build/outputs/apk/release/app-release.apk
 
-If you hit `Unsupported class file major version 69`, your machine is using a too-new Java runtime for the current Android Gradle pipeline. Install Java 17 and point JAVA_HOME to it.
+If you hit `Unsupported class file major version 69`, your machine is using an unsupported Java runtime for the current Android Gradle pipeline.
+
+Use JDK 17 or 21 (not Java 25), and make sure `javac` is available.
+
+`npm run android` now runs a Java compatibility pre-check and will print install guidance if your Java setup is incompatible.
 
 Fedora quick fix:
 
 ```bash
 sudo dnf install java-21-openjdk-devel
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 ```
 
 ## Android APK release automation
