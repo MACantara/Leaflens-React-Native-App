@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
-  Image,
+  ImageBackground,
   Pressable,
   StyleSheet,
   Text,
@@ -12,6 +12,7 @@ import { exploreLeaves, getLeafImageSource, saveExploreLeaf } from '../api/leave
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
+import { Feather } from '@expo/vector-icons';
 
 interface ExploreScreenProps {
   session?: Session;
@@ -37,21 +38,61 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
   const [savingLeafId, setSavingLeafId] = useState<number | undefined>();
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
 
+  const fetchExplore = useCallback(
+    async (nextKeyword: string, nextTags: string[]): Promise<void> => {
+      if (!session) {
+        setItems([]);
+        return;
+      }
+
+      setError('');
+
+      try {
+        const results = await exploreLeaves(session.token, nextKeyword.trim() || undefined, nextTags);
+        setItems(results);
+      } catch (loadError) {
+        setError(errorToText(loadError));
+      }
+    },
+    [session]
+  );
+
+  const availableTags = useMemo(() => {
+    const countByTag = new Map<string, number>();
+
+    items.forEach((item) => {
+      (item.tags ?? []).forEach((rawTag) => {
+        const normalized = String(rawTag).trim().toLowerCase();
+        if (!normalized) {
+          return;
+        }
+
+        countByTag.set(normalized, (countByTag.get(normalized) ?? 0) + 1);
+      });
+    });
+
+    return [...countByTag.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag]) => tag)
+      .slice(0, 10);
+  }, [items]);
+
+  const displayedTags = useMemo(() => {
+    const merged = [...selectedTags, ...availableTags];
+    const unique = new Set<string>();
+
+    return merged.filter((tag) => {
+      if (unique.has(tag)) {
+        return false;
+      }
+      unique.add(tag);
+      return true;
+    });
+  }, [availableTags, selectedTags]);
+
   const loadExploreData = useCallback(async (): Promise<void> => {
-    if (!session) {
-      setItems([]);
-      return;
-    }
-
-    setError('');
-
-    try {
-      const results = await exploreLeaves(session.token, keyword.trim() || undefined, selectedTags);
-      setItems(results);
-    } catch (loadError) {
-      setError(errorToText(loadError));
-    }
-  }, [keyword, selectedTags, session]);
+    await fetchExplore(keyword, selectedTags);
+  }, [fetchExplore, keyword, selectedTags]);
 
   async function onSaveLeaf(leafId: number): Promise<void> {
     if (!session) {
@@ -72,8 +113,10 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
   }
 
   useEffect(() => {
-    void runInitialLoad(loadExploreData);
-  }, [runInitialLoad, loadExploreData]);
+    void runInitialLoad(async () => {
+      await fetchExplore('', []);
+    });
+  }, [fetchExplore, runInitialLoad, session?.token]);
 
   useEffect(() => {
     if (!preselectedTag) {
@@ -87,7 +130,10 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
 
     setKeyword('');
     setSelectedTags([normalized]);
-  }, [preselectedTag, preselectedTagVersion]);
+    void runInitialLoad(async () => {
+      await fetchExplore('', [normalized]);
+    });
+  }, [fetchExplore, preselectedTag, preselectedTagVersion, runInitialLoad]);
 
   function toggleTag(tag: string): void {
     setSelectedTags((current) => {
@@ -105,47 +151,76 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
 
   return (
     <View style={styles.root}>
-      <Text style={styles.title}>Explore Leaves</Text>
-      <Text style={styles.subtitle}>Search across known plants and save useful entries to your collection.</Text>
+      <View style={styles.searchFloatingCard}>
+        <Pressable
+          style={styles.iconCircleButton}
+          onPress={() => {
+            setKeyword('');
+            clearTags();
+            void runInitialLoad(async () => {
+              await fetchExplore('', []);
+            });
+          }}
+        >
+          <Feather name="x" size={27} color="#111111" />
+        </Pressable>
 
-      <View style={styles.searchCard}>
-        <Text style={styles.searchLabel}>Find a leaf</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search..."
+          placeholderTextColor="#9ca3af"
+          value={keyword}
+          onChangeText={setKeyword}
+          returnKeyType="search"
+          onSubmitEditing={() => {
+            void runInitialLoad(loadExploreData);
+          }}
+        />
 
-        <View style={styles.searchRow}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Common or scientific name"
-            placeholderTextColor="#9ca3af"
-            value={keyword}
-            onChangeText={setKeyword}
-            returnKeyType="search"
-            onSubmitEditing={() => {
-              void runInitialLoad(loadExploreData);
-            }}
-          />
+        <Pressable
+          style={[styles.iconCircleButton, loading && styles.searchButtonDisabled]}
+          onPress={() => {
+            void runInitialLoad(loadExploreData);
+          }}
+          disabled={loading}
+        >
+          <Feather name="search" size={27} color="#111111" />
+        </Pressable>
+      </View>
+
+      <View style={styles.filtersFloatingCard}>
+        <View style={styles.filtersHeaderRow}>
+          <View style={styles.filtersTitleWrap}>
+            <Feather name="sliders" size={24} color="#475569" />
+            <Text style={styles.filtersTitle}>Filters</Text>
+          </View>
+
           <Pressable
-            style={[styles.searchButton, loading && styles.searchButtonDisabled]}
+            style={[styles.exploreButton, loading && styles.searchButtonDisabled]}
             onPress={() => {
               void runInitialLoad(loadExploreData);
             }}
             disabled={loading}
           >
-            <Text style={styles.searchButtonLabel}>{loading ? 'Searching...' : 'Search'}</Text>
+            <Feather name="compass" size={21} color="#111111" />
+            <Text style={styles.exploreButtonText}>{loading ? 'Loading' : 'Explore'}</Text>
           </Pressable>
         </View>
 
-        {selectedTags.length > 0 && (
-          <View style={styles.selectedTagWrap}>
-            {selectedTags.map((tag) => (
-              <Pressable key={tag} style={styles.tagPillActive} onPress={() => toggleTag(tag)}>
-                <Text style={styles.tagPillActiveText}>#{tag}</Text>
-              </Pressable>
-            ))}
-            <Pressable style={styles.clearTagButton} onPress={clearTags}>
-              <Text style={styles.clearTagButtonText}>Clear tags</Text>
-            </Pressable>
-          </View>
-        )}
+        <View style={styles.tagGrid}>
+          {displayedTags.length > 0 ? (
+            displayedTags.map((tag) => {
+              const active = selectedTags.includes(tag);
+              return (
+                <Pressable key={tag} style={[styles.tagPill, active && styles.tagPillActive]} onPress={() => toggleTag(tag)}>
+                  <Text style={[styles.tagPillText, active && styles.tagPillActiveText]}>{tag}</Text>
+                </Pressable>
+              );
+            })
+          ) : (
+            <Text style={styles.noTagText}>Search to load suggested tags.</Text>
+          )}
+        </View>
       </View>
 
       {loading && <Text style={styles.helperText}>Loading leaves...</Text>}
@@ -162,7 +237,9 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
         renderItem={({ item }) => (
           <View style={styles.card}>
             {item.imageFilename || item.imageContentType || item.imageSize ? (
-              <Image source={getLeafImageSource(item.leafId, session?.token ?? '')} style={styles.leafImage} />
+              <ImageBackground source={getLeafImageSource(item.leafId, session?.token ?? '')} imageStyle={styles.leafImage} style={styles.leafImageWrap}>
+                <View style={styles.imageOverlay} />
+              </ImageBackground>
             ) : (
               <View style={styles.leafImagePlaceholder}>
                 <Text style={styles.leafImagePlaceholderText}>No image available</Text>
@@ -170,21 +247,7 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
             )}
 
             <Text style={styles.leafTitle}>{item.commonName || 'Unknown'}</Text>
-            <Text style={styles.leafMetaLabel}>Scientific Name</Text>
             <Text style={styles.leafMetaValue}>{item.scientificName || 'N/A'}</Text>
-
-            <Text style={styles.leafMetaLabel}>Uses</Text>
-            <Text style={styles.leafMetaValue}>{item.usage || 'N/A'}</Text>
-
-            {Array.isArray(item.tags) && item.tags.length > 0 && (
-              <View style={styles.itemTagsWrap}>
-                {item.tags.map((tag) => (
-                  <Pressable key={`${item.leafId}-${tag}`} style={styles.tagPill} onPress={() => toggleTag(String(tag).toLowerCase())}>
-                    <Text style={styles.tagPillText}>#{tag}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
 
             <Pressable
               style={[styles.saveButton, savingLeafId === item.leafId && styles.saveButtonDisabled]}
@@ -208,98 +271,96 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ece1dd',
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 10,
     gap: 10
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111827'
-  },
-  subtitle: {
-    color: '#4b5563',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 4
-  },
-  searchCard: {
+  searchFloatingCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 22,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 8,
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 8,
-    elevation: 2
-  },
-  searchLabel: {
-    color: '#6b7280',
-    fontSize: 13,
-    fontWeight: '700',
-    paddingLeft: 2
-  },
-  searchRow: {
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
-    gap: 10
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#000000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 10,
+    elevation: 3
+  },
+  iconCircleButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#f4e9e4',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   searchInput: {
     flex: 1,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 16,
-    minHeight: 50,
+    borderRadius: 999,
+    minHeight: 58,
     paddingHorizontal: 14,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f9fafb',
+    fontSize: 18,
     color: '#111827'
   },
-  searchButton: {
-    backgroundColor: '#8bc34a',
-    borderRadius: 16,
-    minWidth: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14
-  },
   searchButtonDisabled: {
-    backgroundColor: '#b4c694'
+    opacity: 0.65
   },
-  searchButtonLabel: {
-    color: '#0f172a',
-    fontSize: 14,
-    fontWeight: '700'
+  filtersFloatingCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 16,
+    gap: 14,
+    shadowColor: '#000000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 3
   },
-  selectedTagWrap: {
+  filtersHeaderRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  filtersTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10
+  },
+  filtersTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937'
+  },
+  exploreButton: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#9ca3af',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8
   },
-  tagPillActive: {
-    borderRadius: 999,
-    backgroundColor: '#dfeedd',
-    borderWidth: 1,
-    borderColor: '#8bc34a',
-    paddingHorizontal: 10,
-    paddingVertical: 6
-  },
-  tagPillActiveText: {
-    color: '#14532d',
-    fontSize: 12,
+  exploreButtonText: {
+    color: '#111111',
+    fontSize: 15,
     fontWeight: '700'
   },
-  clearTagButton: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#fca5a5',
-    backgroundColor: '#fff1f2',
-    paddingHorizontal: 10,
-    paddingVertical: 6
+  tagGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12
   },
-  clearTagButtonText: {
-    color: '#b91c1c',
-    fontSize: 12,
-    fontWeight: '700'
+  noTagText: {
+    color: '#6b7280',
+    fontSize: 13
   },
   listContent: {
     gap: 12,
@@ -310,19 +371,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: 14,
-    gap: 4,
+    gap: 2,
     shadowColor: '#000000',
     shadowOpacity: 0.06,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 8,
     elevation: 2
   },
+  leafImageWrap: {
+    width: '100%',
+    height: 210,
+    marginBottom: 8
+  },
   leafImage: {
     width: '100%',
     height: 210,
     borderRadius: 14,
-    backgroundColor: '#d1d5db',
-    marginBottom: 8
+    backgroundColor: '#d1d5db'
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 14,
+    backgroundColor: 'rgba(17, 24, 39, 0.08)'
   },
   leafImagePlaceholder: {
     width: '100%',
@@ -344,33 +414,31 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 6
   },
-  leafMetaLabel: {
-    color: '#6b7280',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4
-  },
   leafMetaValue: {
     color: '#374151',
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 20
-  },
-  itemTagsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8
   },
   tagPill: {
     borderRadius: 999,
-    backgroundColor: '#e2e8f0',
-    paddingHorizontal: 10,
-    paddingVertical: 5
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 10
+  },
+  tagPillActive: {
+    backgroundColor: '#dfeedd',
+    borderColor: '#8bc34a'
   },
   tagPillText: {
     color: '#1f2937',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600'
+  },
+  tagPillActiveText: {
+    color: '#14532d',
+    fontWeight: '700'
   },
   saveButton: {
     marginTop: 10,

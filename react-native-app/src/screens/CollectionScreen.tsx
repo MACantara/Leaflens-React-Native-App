@@ -108,7 +108,7 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
           <Image source={getLeafImageSource(selectedLeaf.leafId, session.token)} style={styles.detailImage} />
           <Text style={styles.detailTitle}>{selectedLeaf.commonName || 'N/A'}</Text>
           <Text style={styles.detailScientific}>{selectedLeaf.scientificName || 'N/A'}</Text>
-          <Text style={styles.caviteBadge}>{selectedLeafCavite ? 'Known in Cavite' : 'Cavite status unknown'}</Text>
+          {selectedLeafCavite && <Text style={styles.caviteBadge}>Grows in Cavite</Text>}
 
           <Text style={styles.detailSectionTitle}>Origin</Text>
           <Text style={styles.detailSectionBody}>{selectedLeaf.origin || 'N/A'}</Text>
