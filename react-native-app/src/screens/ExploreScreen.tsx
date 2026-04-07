@@ -249,15 +249,22 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
             <Text style={styles.leafTitle}>{item.commonName || 'Unknown'}</Text>
             <Text style={styles.leafMetaValue}>{item.scientificName || 'N/A'}</Text>
 
-            <Pressable
-              style={[styles.saveButton, savingLeafId === item.leafId && styles.saveButtonDisabled]}
-              onPress={() => onSaveLeaf(item.leafId)}
-              disabled={savingLeafId === item.leafId}
-            >
-              <Text style={styles.saveButtonLabel}>
-                {savingLeafId === item.leafId ? 'Saving...' : 'Save to Collection'}
-              </Text>
-            </Pressable>
+            {session && item.ownerUserId === session.userId ? (
+              <View style={styles.ownerButton}>
+                <Feather name="check-circle" size={16} color="#14532d" />
+                <Text style={styles.ownerButtonLabel}>You own this image</Text>
+              </View>
+            ) : (
+              <Pressable
+                style={[styles.saveButton, savingLeafId === item.leafId && styles.saveButtonDisabled]}
+                onPress={() => onSaveLeaf(item.leafId)}
+                disabled={savingLeafId === item.leafId}
+              >
+                <Text style={styles.saveButtonLabel}>
+                  {savingLeafId === item.leafId ? 'Saving...' : 'Save to Collection'}
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
         ListEmptyComponent={!loading ? <Text style={styles.helperText}>No leaves found.</Text> : null}
@@ -452,6 +459,23 @@ const styles = StyleSheet.create({
   },
   saveButtonLabel: {
     color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  ownerButton: {
+    marginTop: 10,
+    borderRadius: 14,
+    backgroundColor: '#dcfce7',
+    borderWidth: 1,
+    borderColor: '#86efac',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 12
+  },
+  ownerButtonLabel: {
+    color: '#14532d',
     fontSize: 14,
     fontWeight: '700'
   },
