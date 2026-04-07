@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { deleteLeaf, getLeafImageSource, getUserHistory, getUserTags, searchUserLeaves } from '../api/leaves';
 import { ApiError } from '../api/client';
+import { useAppModal } from '../components/AppModalProvider';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
 
@@ -27,6 +28,7 @@ function toErrorText(error: unknown): string {
 }
 
 export function CollectionScreen({ session, onExploreTag }: CollectionScreenProps): React.JSX.Element {
+  const { showConfirm } = useAppModal();
   const [leafList, setLeafList] = useState<LeafItem[]>([]);
   const [selectedLeaf, setSelectedLeaf] = useState<LeafItem | undefined>();
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -97,22 +99,21 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
     }
   }
 
-  function confirmDeleteLeaf(leaf: LeafItem): void {
+  async function confirmDeleteLeaf(leaf: LeafItem): Promise<void> {
     const leafName = leaf.commonName?.trim() || 'this plant';
+    const confirmed = await showConfirm({
+      title: 'Delete from collection',
+      message: `Remove ${leafName} from your collection?`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger'
+    });
 
-    Alert.alert('Delete from collection', `Remove ${leafName} from your collection?`, [
-      {
-        text: 'Cancel',
-        style: 'cancel'
-      },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          void onDeleteLeaf(leaf.leafId);
-        }
-      }
-    ]);
+    if (!confirmed) {
+      return;
+    }
+
+    await onDeleteLeaf(leaf.leafId);
   }
 
   if (selectedLeaf) {
@@ -153,7 +154,7 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
           <Pressable
             style={[styles.deleteButton, deletingLeafId === selectedLeaf.leafId && styles.disabledButton]}
             onPress={() => {
-              confirmDeleteLeaf(selectedLeaf);
+              void confirmDeleteLeaf(selectedLeaf);
             }}
             disabled={deletingLeafId === selectedLeaf.leafId}
           >

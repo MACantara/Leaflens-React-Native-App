@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { analyzeAndSaveLeaf, analyzeLeaf } from '../api/leaves';
 import { ApiError } from '../api/client';
+import { useAppModal } from '../components/AppModalProvider';
 import { LeafAnalysisResponse, Session } from '../types/models';
 
 interface AnalyzeScreenProps {
@@ -63,6 +64,7 @@ function renderResult(
 }
 
 export function AnalyzeScreen({ session, onExploreTag }: AnalyzeScreenProps): React.JSX.Element {
+  const { showAlert } = useAppModal();
   const [imageUri, setImageUri] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -81,7 +83,12 @@ export function AnalyzeScreen({ session, onExploreTag }: AnalyzeScreenProps): Re
   async function pickFromLibrary(): Promise<void> {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Please allow photo library access to continue.');
+      await showAlert({
+        title: 'Permission required',
+        message: 'Please allow photo library access to continue.',
+        acknowledgeLabel: 'Got it',
+        tone: 'info'
+      });
       return;
     }
 
@@ -101,7 +108,12 @@ export function AnalyzeScreen({ session, onExploreTag }: AnalyzeScreenProps): Re
   async function openCamera(): Promise<void> {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Please allow camera access to take a photo.');
+      await showAlert({
+        title: 'Permission required',
+        message: 'Please allow camera access to take a photo.',
+        acknowledgeLabel: 'Got it',
+        tone: 'info'
+      });
       return;
     }
 

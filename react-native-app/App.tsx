@@ -10,6 +10,7 @@ import { HistoryScreen } from './src/screens/HistoryScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { AppModalProvider } from './src/components/AppModalProvider';
 import { Session } from './src/types/models';
 import { createEdgeMenuPanResponder } from './src/utils/mobileGestures';
 
@@ -142,24 +143,16 @@ export default function App(): React.JSX.Element {
     onCloseMenu: closeMenuFromGesture
   });
 
-  if (!iconsLoaded) {
-    return (
-      <SafeAreaView style={styles.root}>
-        <ExpoStatusBar style="dark" />
-      </SafeAreaView>
-    );
-  }
-
-  if (!session) {
-    return (
-      <SafeAreaView style={styles.root}>
-        <ExpoStatusBar style="dark" />
-        <AuthScreen onAuthenticated={setSession} />
-      </SafeAreaView>
-    );
-  }
-
-  return (
+  const appContent = !iconsLoaded ? (
+    <SafeAreaView style={styles.root}>
+      <ExpoStatusBar style="dark" />
+    </SafeAreaView>
+  ) : !session ? (
+    <SafeAreaView style={styles.root}>
+      <ExpoStatusBar style="dark" />
+      <AuthScreen onAuthenticated={setSession} />
+    </SafeAreaView>
+  ) : (
     <SafeAreaView style={styles.root} {...panResponder.panHandlers}>
       <ExpoStatusBar style="dark" />
 
@@ -223,6 +216,8 @@ export default function App(): React.JSX.Element {
       </View>
     </SafeAreaView>
   );
+
+  return <AppModalProvider>{appContent}</AppModalProvider>;
 }
 
 const styles = StyleSheet.create({

@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { deleteLeaf, getUserHistory, getUserLeafCount, updateLeafImageVisibility } from '../api/leaves';
 import { ApiError } from '../api/client';
+import { useAppModal } from '../components/AppModalProvider';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
 
@@ -20,6 +21,7 @@ function toErrorText(error: unknown): string {
 }
 
 export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Element {
+  const { showConfirm } = useAppModal();
   const [history, setHistory] = useState<LeafItem[]>([]);
   const [leafCount, setLeafCount] = useState(0);
   const [deletingLeafId, setDeletingLeafId] = useState<number | undefined>();
@@ -56,22 +58,21 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
     }
   }
 
-  function confirmDeleteLeaf(item: LeafItem): void {
+  async function confirmDeleteLeaf(item: LeafItem): Promise<void> {
     const leafName = item.commonName?.trim() || 'this plant';
+    const confirmed = await showConfirm({
+      title: 'Delete from history',
+      message: `Remove ${leafName} from your history?`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger'
+    });
 
-    Alert.alert('Delete from history', `Remove ${leafName} from your history?`, [
-      {
-        text: 'Cancel',
-        style: 'cancel'
-      },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          void onDeleteLeaf(item.leafId);
-        }
-      }
-    ]);
+    if (!confirmed) {
+      return;
+    }
+
+    await onDeleteLeaf(item.leafId);
   }
 
   async function onToggleImageVisibility(item: LeafItem): Promise<void> {
@@ -148,7 +149,7 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
               <Pressable
                 style={[styles.deleteButton, deletingLeafId === item.leafId && styles.disabledButton]}
                 onPress={() => {
-                  confirmDeleteLeaf(item);
+                  void confirmDeleteLeaf(item);
                 }}
                 disabled={deletingLeafId === item.leafId}
               >

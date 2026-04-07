@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { deleteUserProfile, getUserProfile, updateUserProfile } from '../api/user';
 import { ApiError } from '../api/client';
+import { useAppModal } from '../components/AppModalProvider';
 import { Session } from '../types/models';
 
 interface ProfileScreenProps {
@@ -23,6 +24,7 @@ function toErrorMessage(error: unknown): string {
 }
 
 export function ProfileScreen({ session, onSessionUpdated, onAccountDeleted }: ProfileScreenProps): React.JSX.Element {
+  const { showConfirm } = useAppModal();
   const [userName, setUserName] = useState(session.userName);
   const [email, setEmail] = useState(session.email);
   const [loading, setLoading] = useState(false);
@@ -70,20 +72,20 @@ export function ProfileScreen({ session, onSessionUpdated, onAccountDeleted }: P
     }
   }
 
-  function confirmDelete(): void {
-    Alert.alert('Delete account', 'This action cannot be undone.', [
-      {
-        text: 'Cancel',
-        style: 'cancel'
-      },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          void onDelete();
-        }
-      }
-    ]);
+  async function confirmDelete(): Promise<void> {
+    const confirmed = await showConfirm({
+      title: 'Delete account',
+      message: 'This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger'
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    await onDelete();
   }
 
   async function onDelete(): Promise<void> {
@@ -133,7 +135,13 @@ export function ProfileScreen({ session, onSessionUpdated, onAccountDeleted }: P
           <Text style={styles.primaryButtonLabel}>{saving ? 'Saving...' : 'Save Changes'}</Text>
         </Pressable>
 
-        <Pressable style={[styles.dangerButton, deleting && styles.disabledButton]} onPress={confirmDelete} disabled={saving || deleting}>
+        <Pressable
+          style={[styles.dangerButton, deleting && styles.disabledButton]}
+          onPress={() => {
+            void confirmDelete();
+          }}
+          disabled={saving || deleting}
+        >
           <Text style={styles.dangerButtonLabel}>{deleting ? 'Deleting...' : 'Delete Account'}</Text>
         </Pressable>
       </View>
