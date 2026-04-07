@@ -165,6 +165,28 @@ npm run build:apk-local:gradle
 Expected APK output:
 - android/app/build/outputs/apk/release/app-release.apk
 
+## Run without Expo/Metro (standalone APK)
+If you want the app to run on the phone without being connected to Expo dev tools:
+
+1. Build a release APK (this bundles JS/assets into the APK):
+
+```bash
+npm run build:apk-local
+```
+
+2. Install the generated APK:
+
+```bash
+adb install -r android/app/build/outputs/apk/release/app-release.apk
+```
+
+3. Open the app directly from the phone launcher. Do not run `npm run start` or keep Metro running for this mode.
+
+Important:
+- `npm run android` creates a development build (Dev Client) and expects Metro.
+- `EXPO_PUBLIC_API_BASE_URL` is baked into the release APK at build time. Set it in `.env` before building.
+- If switching from a dev build to release and install fails, uninstall the existing app first, then reinstall the release APK.
+
 If you hit `Unsupported class file major version 69`, your machine is using an unsupported Java runtime for the current Android Gradle pipeline.
 
 Use JDK 17 or 21 (not Java 25), and make sure `javac` is available.
