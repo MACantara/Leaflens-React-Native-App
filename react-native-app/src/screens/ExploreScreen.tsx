@@ -32,6 +32,65 @@ function errorToText(error: unknown): string {
   return 'Unexpected error.';
 }
 
+function normalizeSearchText(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function normalizeTagList(tags: string[]): string[] {
+  const seen = new Set<string>();
+
+  return tags
+    .map((tag) => normalizeSearchText(tag))
+    .filter((tag) => tag.length > 0)
+    .filter((tag) => {
+      if (seen.has(tag)) {
+        return false;
+      }
+
+      seen.add(tag);
+      return true;
+    });
+}
+
+function matchesLeafKeyword(leaf: LeafItem, keyword: string): boolean {
+  if (!keyword) {
+    return true;
+  }
+
+  const searchableValues = [
+    leaf.commonName,
+    leaf.scientificName,
+    leaf.origin,
+    leaf.usage,
+    leaf.medicinalUses,
+    leaf.habitat,
+    leaf.careTips,
+    leaf.safetyNotes,
+    leaf.identificationNotes,
+    ...(leaf.keyCharacteristics ?? []),
+    ...(leaf.tags ?? []),
+    ...(leaf.medicalConditions ?? [])
+  ];
+
+  return searchableValues.some((value) => normalizeSearchText(value).includes(keyword));
+}
+
+function matchesLeafTags(leaf: LeafItem, selectedTags: string[]): boolean {
+  if (selectedTags.length === 0) {
+    return true;
+  }
+
+  const leafTags = new Set((leaf.tags ?? []).map((tag) => normalizeSearchText(tag)).filter((tag) => tag.length > 0));
+  return selectedTags.some((tag) => leafTags.has(tag));
+}
+
+function filterLeavesLocally(leaves: LeafItem[], rawKeyword: string, rawTags: string[]): LeafItem[] {
+  const keyword = normalizeSearchText(rawKeyword);
+  const tags = normalizeTagList(rawTags);
+
+  return leaves.filter((leaf) => matchesLeafKeyword(leaf, keyword) && matchesLeafTags(leaf, tags));
+}
+
 export function ExploreScreen({
   session,
   preselectedTag,
@@ -57,8 +116,9 @@ export function ExploreScreen({
       setError('');
 
       try {
-        const results = await exploreLeaves(session.token, nextKeyword.trim() || undefined, nextTags);
-        setItems(results);
+        const allLeaves = await exploreLeaves(session.token);
+        const filteredLeaves = filterLeavesLocally(allLeaves, nextKeyword, nextTags);
+        setItems(filteredLeaves);
       } catch (loadError) {
         setError(errorToText(loadError));
       }
