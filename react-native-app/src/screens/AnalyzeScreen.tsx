@@ -34,7 +34,6 @@ function renderResult(
       <Image source={{ uri: imageUri }} style={[styles.resultImage, { height: resultImageHeight }]} />
       <Text style={styles.resultTitle}>{result.commonName || 'N/A'}</Text>
       <Text style={styles.resultScientific}>{result.scientificName || 'N/A'}</Text>
-      <Text style={styles.caviteBadge}>{result.isGrownInCavite ? 'Known in Cavite' : 'Cavite status unknown'}</Text>
 
       <Text style={styles.sectionTitle}>Origin</Text>
       <Text style={styles.sectionBody}>{result.origin || 'N/A'}</Text>
@@ -57,6 +56,8 @@ function renderResult(
       ) : (
         <Text style={styles.sectionBody}>N/A</Text>
       )}
+
+      {result.isGrownInCavite && <Text style={styles.caviteBadge}>Grows in Cavite</Text>}
     </View>
   );
 }
