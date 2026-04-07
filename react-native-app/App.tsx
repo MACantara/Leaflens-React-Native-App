@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Modal, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
@@ -46,7 +46,10 @@ function renderActiveTab(
   onCloseLeafDetails: () => void,
   selectedLeafId?: number,
   selectedLeafVersion?: number,
-  exploreSearchLaunchVersion?: number,
+  collectionSearchKeyword?: string,
+  collectionSearchVersion?: number,
+  exploreSearchKeyword?: string,
+  exploreSearchVersion?: number,
   explorePrefillTag?: string,
   explorePrefillVersion?: number
 ): React.JSX.Element {
@@ -64,7 +67,14 @@ function renderActiveTab(
       );
     }
 
-    return <CollectionScreen session={session} onOpenLeafDetails={onOpenLeafDetails} />;
+    return (
+      <CollectionScreen
+        session={session}
+        onOpenLeafDetails={onOpenLeafDetails}
+        globalSearchKeyword={collectionSearchKeyword}
+        globalSearchVersion={collectionSearchVersion}
+      />
+    );
   }
 
   if (tab === 'lens') {
@@ -81,7 +91,8 @@ function renderActiveTab(
         session={session}
         preselectedTag={explorePrefillTag}
         preselectedTagVersion={explorePrefillVersion}
-        openSearchVersion={exploreSearchLaunchVersion}
+        globalSearchKeyword={exploreSearchKeyword}
+        globalSearchVersion={exploreSearchVersion}
       />
     );
   }
@@ -99,7 +110,11 @@ export default function App(): React.JSX.Element {
   const [selectedLeafId, setSelectedLeafId] = useState<number | undefined>();
   const [selectedLeafVersion, setSelectedLeafVersion] = useState(0);
   const [globalSearchVisible, setGlobalSearchVisible] = useState(false);
-  const [exploreSearchLaunchVersion, setExploreSearchLaunchVersion] = useState(0);
+  const [globalSearchKeyword, setGlobalSearchKeyword] = useState('');
+  const [collectionSearchKeyword, setCollectionSearchKeyword] = useState('');
+  const [collectionSearchVersion, setCollectionSearchVersion] = useState(0);
+  const [exploreSearchKeyword, setExploreSearchKeyword] = useState('');
+  const [exploreSearchVersion, setExploreSearchVersion] = useState(0);
   const [explorePrefillTag, setExplorePrefillTag] = useState<string | undefined>();
   const [explorePrefillVersion, setExplorePrefillVersion] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -116,6 +131,7 @@ export default function App(): React.JSX.Element {
   function handleLogout(): void {
     setSession(undefined);
     setSelectedLeafId(undefined);
+    setGlobalSearchKeyword('');
     setGlobalSearchVisible(false);
     setActiveTab('home');
     setMenuVisible(false);
@@ -167,14 +183,19 @@ export default function App(): React.JSX.Element {
   }
 
   function openCollectionSearch(): void {
+    const nextKeyword = globalSearchKeyword.trim();
+    setCollectionSearchKeyword(nextKeyword);
+    setCollectionSearchVersion((value) => value + 1);
     setSelectedLeafId(undefined);
     setActiveTab('home');
     setGlobalSearchVisible(false);
   }
 
   function openPublicExploreSearch(): void {
+    const nextKeyword = globalSearchKeyword.trim();
+    setExploreSearchKeyword(nextKeyword);
+    setExploreSearchVersion((value) => value + 1);
     setActiveTab('explore');
-    setExploreSearchLaunchVersion((value) => value + 1);
     setGlobalSearchVisible(false);
   }
 
@@ -243,6 +264,16 @@ export default function App(): React.JSX.Element {
             <Text style={styles.searchLauncherTitle}>Search Plants</Text>
             <Text style={styles.searchLauncherSubtitle}>Use search from anywhere in the app.</Text>
 
+            <TextInput
+              style={styles.searchLauncherInput}
+              placeholder="Type a plant name, habitat, or use"
+              placeholderTextColor="#94a3b8"
+              value={globalSearchKeyword}
+              onChangeText={setGlobalSearchKeyword}
+              returnKeyType="search"
+              onSubmitEditing={openPublicExploreSearch}
+            />
+
             <Pressable style={styles.searchLauncherButton} onPress={openCollectionSearch}>
               <Feather name="home" size={16} color="#111827" />
               <Text style={styles.searchLauncherButtonLabel}>Search in Your Collection</Text>
@@ -283,7 +314,10 @@ export default function App(): React.JSX.Element {
           handleCloseLeafDetails,
           selectedLeafId,
           selectedLeafVersion,
-            exploreSearchLaunchVersion,
+          collectionSearchKeyword,
+          collectionSearchVersion,
+          exploreSearchKeyword,
+          exploreSearchVersion,
           explorePrefillTag,
           explorePrefillVersion
         )}
@@ -440,6 +474,16 @@ const styles = StyleSheet.create({
   searchLauncherSubtitle: {
     color: '#64748b',
     fontSize: 13
+  },
+  searchLauncherInput: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    backgroundColor: '#f8fafc',
+    minHeight: 44,
+    paddingHorizontal: 12,
+    color: '#111827',
+    fontSize: 14
   },
   searchLauncherButton: {
     flexDirection: 'row',

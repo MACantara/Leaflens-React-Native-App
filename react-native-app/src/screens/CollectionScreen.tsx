@@ -13,6 +13,8 @@ const CARD_MIN_WIDTH = 260;
 interface CollectionScreenProps {
   session: Session;
   onOpenLeafDetails?: (leafId: number) => void;
+  globalSearchKeyword?: string;
+  globalSearchVersion?: number;
 }
 
 function toErrorText(error: unknown): string {
@@ -25,10 +27,16 @@ function toErrorText(error: unknown): string {
   return 'Unexpected error.';
 }
 
-export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScreenProps): React.JSX.Element {
+export function CollectionScreen({
+  session,
+  onOpenLeafDetails,
+  globalSearchKeyword,
+  globalSearchVersion
+}: CollectionScreenProps): React.JSX.Element {
   const [leafList, setLeafList] = useState<LeafItem[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [keyword, setKeyword] = useState('');
   const [error, setError] = useState('');
   const { width: viewportWidth } = useWindowDimensions();
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
@@ -41,29 +49,51 @@ export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScree
   const cardMinHeight = cardImageHeight + 140;
   const snapInterval = cardWidth + CARD_HORIZONTAL_GAP;
 
-  const hasFilters = selectedTags.length > 0;
+  const fetchCollection = useCallback(
+    async (nextKeyword: string, nextTags: string[]): Promise<void> => {
+      setError('');
+
+      try {
+        const normalizedKeyword = nextKeyword.trim();
+        const hasActiveFilters = nextTags.length > 0 || normalizedKeyword.length > 0;
+
+        const [historyOrSearch, tags] = await Promise.all([
+          hasActiveFilters
+            ? searchUserLeaves(session.userId, session.token, normalizedKeyword || undefined, nextTags)
+            : getUserHistory(session.userId, session.token).then((history) => history.leafList ?? []),
+          getUserTags(session.userId, session.token)
+        ]);
+
+        setLeafList(historyOrSearch);
+        setAvailableTags(tags);
+      } catch (refreshError) {
+        setError(toErrorText(refreshError));
+      }
+    },
+    [session.token, session.userId]
+  );
 
   const refreshCollection = useCallback(async (): Promise<void> => {
-    setError('');
-
-    try {
-      const [historyOrSearch, tags] = await Promise.all([
-        hasFilters
-          ? searchUserLeaves(session.userId, session.token, undefined, selectedTags)
-          : getUserHistory(session.userId, session.token).then((history) => history.leafList ?? []),
-        getUserTags(session.userId, session.token)
-      ]);
-
-      setLeafList(historyOrSearch);
-      setAvailableTags(tags);
-    } catch (refreshError) {
-      setError(toErrorText(refreshError));
-    }
-  }, [hasFilters, selectedTags, session.token, session.userId]);
+    await fetchCollection(keyword, selectedTags);
+  }, [fetchCollection, keyword, selectedTags]);
 
   useEffect(() => {
     void runInitialLoad(refreshCollection);
-  }, [runInitialLoad, refreshCollection, selectedTags]);
+  }, [refreshCollection, runInitialLoad]);
+
+  useEffect(() => {
+    if (globalSearchVersion === undefined) {
+      return;
+    }
+
+    const normalizedKeyword = (globalSearchKeyword ?? '').trim();
+    setKeyword(normalizedKeyword);
+    setSelectedTags([]);
+
+    void runInitialLoad(async () => {
+      await fetchCollection(normalizedKeyword, []);
+    });
+  }, [fetchCollection, globalSearchKeyword, globalSearchVersion, runInitialLoad]);
 
   function toggleTag(tag: string): void {
     setSelectedTags((current) => {
@@ -79,7 +109,7 @@ export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScree
     <View style={styles.root}>
       <Text style={styles.title}>Your Collection</Text>
 
-      <View style={styles.searchCard}>
+      <View style={styles.filterCard}>
         {availableTags.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagFilterRow}>
             {availableTags.map((tag) => {
@@ -147,7 +177,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#111827'
   },
-  searchCard: {
+  filterCard: {
     backgroundColor: '#ffffff',
     borderRadius: 18,
     padding: 12,
