@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { deleteLeaf, getLeafImageSource, getLeafReferences, getUserHistory, getUserTags, searchUserLeaves } from '../api/leaves';
+import { deleteLeaf, getLeafImageSource, getUserHistory, getUserTags, searchUserLeaves } from '../api/leaves';
 import { ApiError } from '../api/client';
-import { LeafItem, LeafReference, Session } from '../types/models';
+import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
 
 const ROOT_HORIZONTAL_PADDING = 20;
@@ -29,7 +29,6 @@ function toErrorText(error: unknown): string {
 export function CollectionScreen({ session, onExploreTag }: CollectionScreenProps): React.JSX.Element {
   const [leafList, setLeafList] = useState<LeafItem[]>([]);
   const [selectedLeaf, setSelectedLeaf] = useState<LeafItem | undefined>();
-  const [leafReferences, setLeafReferences] = useState<LeafReference[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
@@ -69,27 +68,9 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
   const selectedLeafTags = useMemo(() => selectedLeaf?.tags ?? [], [selectedLeaf]);
   const selectedLeafCavite = Boolean(selectedLeaf?.isGrownInCavite);
 
-  const refreshSelectedLeafReferences = useCallback(async (): Promise<void> => {
-    if (!selectedLeaf) {
-      setLeafReferences([]);
-      return;
-    }
-
-    try {
-      const references = await getLeafReferences(selectedLeaf.leafId, session.token);
-      setLeafReferences(references);
-    } catch {
-      setLeafReferences(selectedLeaf.references ?? []);
-    }
-  }, [selectedLeaf, session.token]);
-
   useEffect(() => {
     void runInitialLoad(refreshCollection);
   }, [runInitialLoad, refreshCollection]);
-
-  useEffect(() => {
-    void refreshSelectedLeafReferences();
-  }, [refreshSelectedLeafReferences]);
 
   function toggleTag(tag: string): void {
     setSelectedTags((current) => {
@@ -147,18 +128,6 @@ export function CollectionScreen({ session, onExploreTag }: CollectionScreenProp
                 </Pressable>
               ))}
             </View>
-          ) : (
-            <Text style={styles.detailSectionBody}>N/A</Text>
-          )}
-
-          <Text style={styles.detailSectionTitle}>References</Text>
-          {leafReferences.length > 0 ? (
-            leafReferences.map((reference) => (
-              <Pressable key={reference.url} style={styles.referenceItem} onPress={() => void Linking.openURL(reference.url)}>
-                <Text style={styles.referenceTitle}>{reference.title}</Text>
-                <Text style={styles.referenceUrl}>{reference.url}</Text>
-              </Pressable>
-            ))
           ) : (
             <Text style={styles.detailSectionBody}>N/A</Text>
           )}
@@ -424,22 +393,6 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     fontSize: 12,
     fontWeight: '600'
-  },
-  referenceItem: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 2
-  },
-  referenceTitle: {
-    color: '#111827',
-    fontSize: 13,
-    fontWeight: '700'
-  },
-  referenceUrl: {
-    color: '#475569',
-    fontSize: 12
   },
   deleteButton: {
     marginTop: 12,

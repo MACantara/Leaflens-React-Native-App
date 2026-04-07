@@ -5,7 +5,6 @@ import { leafAnalyzerRouter } from './routes/leafAnalyzer.js';
 import { leavesRouter } from './routes/leaves.js';
 import { leafHistoryRouter } from './routes/leafHistory.js';
 import { tagsRouter } from './routes/tags.js';
-import { leafReferencesRouter } from './routes/leafReferences.js';
 import { userRouter } from './routes/user.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
@@ -23,7 +22,6 @@ app.use('/api/v1/leaf-analyzer', leafAnalyzerRouter);
 app.use('/api/v1/leaves', leavesRouter);
 app.use('/api/v1/leaf-history', leafHistoryRouter);
 app.use('/api/v1/tags', tagsRouter);
-app.use('/api/v1/leaves', leafReferencesRouter);
 app.use('/api/v1/user', userRouter);
 
 app.use(notFound);

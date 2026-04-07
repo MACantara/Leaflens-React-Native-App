@@ -8,7 +8,6 @@ This folder contains the LeafLens mobile app built with React Native + TypeScrip
 - Analyze and save to user collection
 - Leaf exploration and save-to-collection
 - User collection view with keyword/tag filtering
-- Reference loading for saved leaves
 
 ## Project structure
 - App.tsx: main app shell and tab navigation state

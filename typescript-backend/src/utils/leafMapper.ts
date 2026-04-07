@@ -12,7 +12,6 @@ export interface LeafDto {
   imageContentType?: string;
   imageSize?: number;
   tags?: string[];
-  references?: Array<{ url: string; title: string }>;
 }
 
 export function toLeafDto(leaf: LeafDoc): LeafDto {
@@ -27,7 +26,6 @@ export function toLeafDto(leaf: LeafDoc): LeafDto {
     imageFilename: leaf.imageFilename,
     imageContentType: leaf.imageContentType,
     imageSize: leaf.imageSize,
-    tags: leaf.tags,
-    references: leaf.references ?? []
+    tags: leaf.tags
   };
 }

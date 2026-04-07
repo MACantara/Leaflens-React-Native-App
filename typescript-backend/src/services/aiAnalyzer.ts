@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { env } from '../env.js';
-import type { LeafAnalysisResponse, LeafReference } from '../types.js';
+import type { LeafAnalysisResponse } from '../types.js';
 
 const REQUEST_TIMEOUT_MS = 25000;
 
@@ -12,8 +12,7 @@ function defaultAnalysis(): LeafAnalysisResponse {
     uses: 'N/A',
     habitat: 'N/A',
     isGrownInCavite: false,
-    tags: [],
-    references: []
+    tags: []
   };
 }
 
@@ -71,32 +70,6 @@ function toBoolean(value: unknown): boolean {
   return false;
 }
 
-function normalizeReferences(value: unknown): LeafReference[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .map((ref) => {
-      if (typeof ref === 'string') {
-        return { url: ref, title: ref };
-      }
-
-      if (ref && typeof ref === 'object') {
-        const candidate = ref as { url?: unknown; title?: unknown };
-        const url = String(candidate.url ?? '').trim();
-        const title = String(candidate.title ?? url).trim();
-        if (!url) {
-          return null;
-        }
-        return { url, title: title || url };
-      }
-
-      return null;
-    })
-    .filter((ref): ref is LeafReference => Boolean(ref));
-}
-
 function normalizeTags(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -131,8 +104,7 @@ function normalizeAnalysis(value: unknown): LeafAnalysisResponse {
     uses: String(candidate.uses ?? candidate.usage ?? 'N/A'),
     habitat: String(candidate.habitat ?? 'N/A'),
     isGrownInCavite: toBoolean(candidate.isGrownInCavite ?? candidate.is_grown_in_cavite),
-    tags: normalizeTags(candidate.tags),
-    references: normalizeReferences(candidate.references)
+    tags: normalizeTags(candidate.tags)
   };
 }
 
@@ -168,8 +140,7 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
     '  "uses": "string",',
     '  "habitat": "string",',
     '  "isGrownInCavite": true,',
-    '  "tags": ["string"],',
-    '  "references": [{"url": "https://...", "title": "string"}]',
+    '  "tags": ["string"]',
     '}',
     'Do not include markdown, explanation, or extra keys.'
   ].join('\n');

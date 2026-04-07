@@ -11,11 +11,6 @@ export interface AuthResponse {
   message: string;
 }
 
-export interface LeafReference {
-  url: string;
-  title: string;
-}
-
 export interface LeafAnalysisResponse {
   commonName: string;
   scientificName: string;
@@ -24,7 +19,6 @@ export interface LeafAnalysisResponse {
   habitat: string;
   isGrownInCavite: boolean;
   tags: string[];
-  references: LeafReference[];
 }
 
 export interface LeafRow {

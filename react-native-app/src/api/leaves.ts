@@ -3,8 +3,7 @@ import {
   AnalyzeAndSaveResponse,
   LeafAnalysisResponse,
   LeafCollectionResponse,
-  LeafItem,
-  LeafReference
+  LeafItem
 } from '../types/models';
 
 function buildImageFormData(fieldName: string, imageUri: string): FormData {
@@ -72,13 +71,6 @@ export function searchUserLeaves(userId: number, token: string, keyword?: string
 
 export function getUserTags(userId: number, token: string): Promise<string[]> {
   return apiRequest<string[]>(`/api/v1/tags/user/${userId}`, {
-    method: 'GET',
-    token
-  });
-}
-
-export function getLeafReferences(leafId: number, token: string): Promise<LeafReference[]> {
-  return apiRequest<LeafReference[]>(`/api/v1/leaves/${leafId}/references`, {
     method: 'GET',
     token
   });

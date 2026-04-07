@@ -35,8 +35,8 @@ Java baseline note:
 | Save explored/public leaf to collection | Implemented | Implemented (`routes/leaves.ts`) | Implemented (`screens/ExploreScreen.tsx`) | Full |
 | Search user history by keyword + tags | Implemented (`LeafCollectionController`) | Implemented (`routes/leafHistory.ts`) | Implemented (`screens/CollectionScreen.tsx`) | Full |
 | Tag discovery by user | Implemented (`TagController`) | Implemented (`routes/tags.ts`) | Implemented (`screens/CollectionScreen.tsx`) | Full |
-| Leaf references retrieval | Implemented (`LeafReferenceController`) | Implemented (`routes/leafReferences.ts`) | Implemented in collection details (`screens/CollectionScreen.tsx`) | Full |
-| AI output tags/references schema | Implemented | Implemented (`services/aiAnalyzer.ts`) | Displayed in analysis result (`screens/AnalyzeScreen.tsx`) | Full |
+| Leaf references retrieval | Implemented (`LeafReferenceController`) | Removed from active stack | Removed from active stack | Not in current scope |
+| AI output schema | Implemented (tags + references) | Implemented (tags only) | Displayed in analysis result (tags only) | Partial |
 | Location-based Cavite enrichment (`isGrownInCavite`) | Deterministic dataset + registry/service pattern | Deterministic dataset-based matching (`services/cavitePlants.ts`) with model fallback | Displayed in analyze/collection details | Partial (functionally close, architecture differs) |
 | Security posture for protected routes | Auth required except auth + analyze | Auth required on equivalent route groups (auth + analyze public; others protected) | Sends bearer token on protected calls | Full |
 
@@ -55,11 +55,16 @@ Java baseline note:
 - TypeScript uses local dataset matching (`cavite-plants.json`) with fallback to model signal.
 - Behavior is close, but implementation architecture is not one-to-one.
 
+### 4) Leaf references were intentionally removed
+- AI-generated references are no longer produced, stored, or exposed in the active TypeScript backend and React Native app.
+- This is a deliberate product/data decision and remains a parity difference versus the Java baseline.
+
 ## Recommended Final Parity Backlog
 
 1. Add optional manual-save UI flow in React Native if this user journey is still required.
 2. Optionally call single-leaf detail endpoint when opening collection detail view (for strict API parity and freshest data).
 3. If architectural parity is required, add registry-style location service abstraction to TypeScript backend (current functional behavior is already close).
+4. Keep references removed unless product requirements explicitly reintroduce trusted citation sources.
 
 ## Archive Readiness (Java Code)
 

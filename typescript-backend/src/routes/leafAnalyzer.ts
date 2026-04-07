@@ -54,8 +54,7 @@ leafAnalyzerRouter.post(
         uses: 'N/A',
         habitat: 'N/A',
         isGrownInCavite: false,
-        tags: [],
-        references: []
+        tags: []
       });
     }
   })
@@ -119,16 +118,6 @@ leafAnalyzerRouter.post(
       .filter((tag) => tag.length > 0)
       .map((tag) => tag.toLowerCase())
       .filter((tag, index, values) => values.indexOf(tag) === index);
-    const normalizedReferences = enriched.references
-      .map((ref) => ({
-        url: String(ref.url ?? '').trim(),
-        title: String(ref.title ?? ref.url ?? '').trim()
-      }))
-      .filter((ref) => ref.url.length > 0)
-      .map((ref) => ({
-        url: ref.url,
-        title: ref.title || ref.url
-      }));
 
     const uploadedImage = await uploadLeafImageToStorage({
       image: normalizedImage.buffer,
@@ -152,7 +141,6 @@ leafAnalyzerRouter.post(
       imageStorageKey: uploadedImage.key,
       imageStorageBucket: uploadedImage.bucket,
       tags: normalizedTags,
-      references: normalizedReferences,
       createdAt: now,
       updatedAt: now
     };

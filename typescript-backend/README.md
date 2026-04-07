@@ -30,7 +30,6 @@ This folder contains the TypeScript/Node.js Leaflens backend API.
 - `GET /api/v1/leaf-history/user/:userId/count`
 - `GET /api/v1/leaf-history/user/:userId/search`
 - `GET /api/v1/tags/user/:userId`
-- `GET /api/v1/leaves/:leafId/references`
 
 ## Scripts
 - `npm run dev`: Run in watch mode with `tsx`
@@ -39,6 +38,7 @@ This folder contains the TypeScript/Node.js Leaflens backend API.
 - `npm run typecheck`: Run TypeScript checks without emitting files
 - `npm run images:backfill-1080p`: Resize all bucket images to 1080p and transcode the image bytes to WebP (uses temporary files and removes them automatically)
 - `npm run db:migrate:delete-non-applicable-leaves`: Delete non-applicable leaf records and remove their stored images
+- `npm run db:migrate:remove-ai-references`: Remove previously stored AI-generated references from leaf records
 
 ## Local setup
 1. Copy `.env.example` to `.env` and fill values.

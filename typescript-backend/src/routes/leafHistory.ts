@@ -63,44 +63,6 @@ function normalizeTagsInput(value: unknown): string[] {
     });
 }
 
-function normalizeReferencesInput(value: unknown): Array<{ url: string; title: string }> {
-  let rawArray: unknown[] = [];
-
-  if (Array.isArray(value)) {
-    rawArray = value;
-  } else if (typeof value === 'string' && value.trim().length > 0) {
-    try {
-      const parsed = JSON.parse(value) as unknown;
-      if (Array.isArray(parsed)) {
-        rawArray = parsed;
-      }
-    } catch {
-      rawArray = [];
-    }
-  }
-
-  return rawArray
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object') {
-        return null;
-      }
-
-      const candidate = entry as { url?: unknown; title?: unknown };
-      const url = String(candidate.url ?? '').trim();
-      const title = String(candidate.title ?? candidate.url ?? '').trim();
-
-      if (!url) {
-        return null;
-      }
-
-      return {
-        url,
-        title: title || url
-      };
-    })
-    .filter((reference): reference is { url: string; title: string } => Boolean(reference));
-}
-
 leafHistoryRouter.post(
   '/save/:userId',
   requireAuth,
@@ -137,7 +99,6 @@ leafHistoryRouter.post(
     const usage = String(req.body.uses ?? req.body.usage ?? '').trim();
     const habitat = String(req.body.habitat ?? '').trim();
     const tags = normalizeTagsInput(req.body.tags);
-    const references = normalizeReferencesInput(req.body.references);
     const isGrownInCavite = resolveCaviteGrowthFlag({
       commonName,
       scientificName,
@@ -168,7 +129,6 @@ leafHistoryRouter.post(
       imageStorageKey: uploadedImage.key,
       imageStorageBucket: uploadedImage.bucket,
       tags,
-      references,
       createdAt: now,
       updatedAt: now
     };

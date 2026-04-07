@@ -28,7 +28,6 @@ function renderResult(
   onExploreTag?: (tag: string) => void
 ): React.JSX.Element {
   const hasTags = result.tags.length > 0;
-  const hasReferences = result.references.length > 0;
 
   return (
     <View style={styles.resultCard}>
@@ -55,18 +54,6 @@ function renderResult(
             </Pressable>
           ))}
         </View>
-      ) : (
-        <Text style={styles.sectionBody}>N/A</Text>
-      )}
-
-      <Text style={styles.sectionTitle}>References</Text>
-      {hasReferences ? (
-        result.references.map((reference) => (
-          <View key={reference.url} style={styles.referenceItem}>
-            <Text style={styles.referenceTitle}>{reference.title}</Text>
-            <Text style={styles.referenceUrl}>{reference.url}</Text>
-          </View>
-        ))
       ) : (
         <Text style={styles.sectionBody}>N/A</Text>
       )}
@@ -334,21 +321,5 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     fontSize: 12,
     fontWeight: '600'
-  },
-  referenceItem: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 2
-  },
-  referenceTitle: {
-    color: '#111827',
-    fontSize: 13,
-    fontWeight: '700'
-  },
-  referenceUrl: {
-    color: '#475569',
-    fontSize: 12
   }
 });

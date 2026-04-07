@@ -1,6 +1,5 @@
 import { Db, MongoClient } from 'mongodb';
 import { env } from './env.js';
-import type { LeafReference } from './types.js';
 
 export interface CounterDoc {
   _id: string;
@@ -34,7 +33,6 @@ export interface LeafDoc {
   imageStorageBucket?: string;
   imageStorageEndpoint?: string;
   tags: string[];
-  references: LeafReference[];
   createdAt: Date;
   updatedAt: Date;
 }
