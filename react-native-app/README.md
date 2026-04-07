@@ -1,87 +1,141 @@
 # React Native App (TypeScript)
 
-This folder contains the LeafLens mobile app built with React Native + TypeScript (Expo).
+This package contains the LeafLens mobile client built with Expo + React Native + TypeScript.
 
-## Included features
-- Authentication: register, login, JWT session usage
-- Leaf analysis from image upload
-- Analyze and save to user collection
-- Leaf exploration and save-to-collection
-- User collection view with keyword/tag filtering
+It is optimized for:
+- Fast local iteration (Dev Client + Metro)
+- Reliable standalone APK demos (release builds)
+- Clear UX through shared loading/empty/progress/error components
 
-## Project structure
-- App.tsx: main app shell and tab navigation state
-- src/api: typed API client and endpoint wrappers
-- src/screens: Auth, Analyze, Explore, Collection screens
-- src/components: reusable UI components
-- src/types: shared TypeScript models
+Additional presenter resource:
+- [PRESENTATION_GUIDE.md](PRESENTATION_GUIDE.md)
+
+## Table of contents
+
+- [What this app does](#what-this-app-does)
+- [Architecture and screen map](#architecture-and-screen-map)
+- [Shared UI and state utilities](#shared-ui-and-state-utilities)
+- [Search behavior](#search-behavior)
+- [Setup](#setup)
+- [Android setup and troubleshooting](#android-setup-and-troubleshooting)
+- [Build and run modes](#build-and-run-modes)
+- [Presenter tips and tricks](#presenter-tips-and-tricks)
+- [Potential demo questions and answers](#potential-demo-questions-and-answers)
+
+## What this app does
+
+- User auth (register/login)
+- Leaf analysis and save flow
+- Collection browsing and details
+- Explore public plants and save to collection
+- Global search overlay with keyword + tag parsing
+- Condition-oriented plant discovery
+- Profile edit and account deletion
+
+## Architecture and screen map
+
+Main shell:
+- `App.tsx`: navigation shell, global search overlay, menu, and cross-screen wiring
+
+Screens:
+- `AuthScreen`: authentication UI and session bootstrap
+- `AnalyzeScreen`: image pick/capture and analysis result rendering
+- `CollectionScreen`: saved plants with local filtering
+- `ExploreScreen`: public plants with local filtering and save actions
+- `PlantDetailsScreen`: deep details, sharing toggle, delete action
+- `HistoryScreen`: saved analysis timeline and count
+- `ProfileScreen`: profile management
+
+API wrappers:
+- `src/api/client.ts`: request utility, timeout handling, error parsing
+- `src/api/leaves.ts`: leaf routes
+- `src/api/auth.ts`, `src/api/user.ts`
+
+## Shared UI and state utilities
+
+The app now centralizes status UX through:
+- `src/components/StateFeedback.tsx`
+
+Provided components:
+- `StatusBanner`: loading/info/success/error banner with icon + tone
+- `EmptyStateCard`: icon + title + explanatory text for empty views
+
+Other shared behavior:
+- `src/components/AppModalProvider.tsx`: standardized alerts/confirm dialogs
+- `src/utils/mobileGestures.ts`: pull-to-refresh and menu gesture helpers
+
+Why this matters for presentations:
+- Every key state is visible and consistently styled.
+- Empty states explain what to do next.
+- Progress states reduce ambiguity during network-heavy actions.
+
+## Search behavior
+
+Global search overlay supports:
+- Keyword search (name, uses, medicinal fields, conditions)
+- Tag filtering via selectable pills
+- Inline hashtag parsing from input, for example `#medicinal #headache`
+
+Condition search notes:
+- The app uses local filtering on fetched lists for robust behavior even if backend search filters differ by environment version.
 
 ## Setup
+
 1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Copy environment file and set API URL:
+2. Create environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Set EXPO_PUBLIC_API_BASE_URL in .env.
+3. Set API endpoint:
 
-Fallback behavior if EXPO_PUBLIC_API_BASE_URL is missing:
-- Development mode: falls back to http://localhost:8080
-- Release APK: falls back to https://leaflens-backend.up.railway.app
-
-Examples:
-- Android emulator: http://10.0.2.2:8080
-- iOS simulator: http://localhost:8080
-- Physical device: http://<your-local-ip>:8080
-
-3. Start the app:
-
-```bash
-npm run start
+```env
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8080
 ```
 
-Then run Android/iOS/web from Expo CLI.
+Common values:
+- Android emulator: `http://10.0.2.2:8080`
+- iOS simulator: `http://localhost:8080`
+- Physical device: `http://<your-lan-ip>:8080`
 
-## Fedora Android setup (one-time)
-Use this when developing on Fedora and building with `npm run android`.
+Fallback behavior if variable is missing:
+- Dev: `http://localhost:8080`
+- Release APK: `https://leaflens-backend.up.railway.app`
 
-1. Install Java 21:
+## Android setup and troubleshooting
+
+### One-time Linux/Fedora setup
+
+1. Install Java:
 
 ```bash
 sudo dnf install java-21-openjdk-devel
 ```
 
-2. Prepare Android SDK command-line tools directory structure:
+2. Configure SDK paths:
 
 ```bash
 mkdir -p ~/Android/Sdk/cmdline-tools
 ```
 
-Download Android Command-line Tools from the Android Studio site, unzip them, and place the extracted folder contents under:
+Place Android Command-line Tools in:
+- `~/Android/Sdk/cmdline-tools/latest/`
 
-`~/Android/Sdk/cmdline-tools/latest/`
-
-Expected binaries include:
-- `~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager`
-
-3. Persist environment variables in shell profile (`~/.bashrc`):
+3. Add shell profile exports:
 
 ```bash
 cat <<'EOF' >> ~/.bashrc
-
-# Android SDK & Java Configuration
 export JAVA_HOME="/usr/lib/jvm/java-21-openjdk"
 export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
 export ANDROID_HOME="$ANDROID_SDK_ROOT"
 export PATH="$JAVA_HOME/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
 EOF
-
 source ~/.bashrc
 ```
 
@@ -92,147 +146,93 @@ yes | sdkmanager --licenses
 sdkmanager "ndk;27.1.12297006"
 ```
 
-5. Verify tooling and run:
+### Frequent issues
+
+Issue: unsupported Java class version
+- Use JDK 17 or 21 only.
+
+Issue: Android command fails from wrong folder
+- Run app commands from `react-native-app` directory.
+
+Issue: app installs but cannot reach backend
+- Use reachable host in `EXPO_PUBLIC_API_BASE_URL`.
+
+## Build and run modes
+
+### Dev Client mode
 
 ```bash
-java -version
-sdkmanager --version
 npm run android
 ```
 
-Notes:
-- `ANDROID_SDK_ROOT` must point to a full SDK directory (for example `~/Android/Sdk`), not a standalone `platform-tools` extraction.
-- This codebase currently requires NDK `27.1.12297006` for Android builds.
+Behavior:
+- Builds/runs development client
+- Requires Metro running
+- Best for active coding and debugging
 
-## Windows Android setup (one-time)
-Current machine status from setup:
-- Android Studio installed
-- Android Platform Tools installed (adb available)
-- Expo dependencies aligned with SDK 53
+### Release APK mode (standalone)
 
-Remaining step needed to run on Android emulator:
-1. Open Android Studio.
-2. Go to More Actions -> SDK Manager.
-3. Install these in SDK Tools:
-- Android SDK Command-line Tools
-- Android SDK Platform-Tools
-- Android Emulator
-4. In SDK Platforms, install at least one recent Android platform and system image (for example Android 14 or 15 x86_64).
-5. Open Device Manager and create an AVD.
-6. Start the emulator.
-7. Run npm run android.
-
-Alternative to emulator:
-- Connect a real Android phone with USB debugging enabled and run npm run android.
-
-Quick diagnostics:
-- Run npm run android:check to verify ANDROID_HOME, adb, and connected devices.
-
-## Backend endpoint assumptions
-The app is wired to these backend route groups:
-- /api/v1/auth
-- /api/v1/leaf-analyzer
-- /api/v1/leaves
-- /api/v1/leaf-history
-- /api/v1/tags
-
-## Notes
-- The app currently stores session in memory only (no persistent storage).
-- Image upload uses multipart form data matching your backend field names:
-  - analyze: image
-  - analyze-save: leaf-image
-- Navigation and action icons are loaded from bundled icon fonts during app startup for release APK reliability.
-
-## Manual local APK build (fast debug loop)
-Build release APK locally:
+Build:
 
 ```bash
 npm run build:apk-local
 ```
 
-Faster rebuild (keeps generated native project, skips clean):
-
-```bash
-npm run build:apk-local:fast
-```
-
-Fastest rebuild when only JS/TS code changed (no app.json/plugin changes):
-
-```bash
-npm run build:apk-local:gradle
-```
-
-Expected APK output:
-- android/app/build/outputs/apk/release/app-release.apk
-
-## Run without Expo/Metro (standalone APK)
-If you want the app to run on the phone without being connected to Expo dev tools:
-
-1. Build a release APK (this bundles JS/assets into the APK):
-
-```bash
-npm run build:apk-local
-```
-
-2. Install the generated APK:
+Install:
 
 ```bash
 adb install -r android/app/build/outputs/apk/release/app-release.apk
 ```
 
-3. Open the app directly from the phone launcher. Do not run `npm run start` or keep Metro running for this mode.
+Behavior:
+- Runs without Metro
+- Suitable for stable demos and handoff
 
-Important:
-- `npm run android` creates a development build (Dev Client) and expects Metro.
-- `EXPO_PUBLIC_API_BASE_URL` is baked into the release APK at build time. Set it in `.env` before building.
-- If switching from a dev build to release and install fails, uninstall the existing app first, then reinstall the release APK.
-
-If you hit `Unsupported class file major version 69`, your machine is using an unsupported Java runtime for the current Android Gradle pipeline.
-
-Use JDK 17 or 21 (not Java 25), and make sure `javac` is available.
-
-`npm run android` now runs a Java compatibility pre-check and will print install guidance if your Java setup is incompatible.
-
-If `npm run android` reports Android SDK setup is incomplete:
-- Ensure `ANDROID_SDK_ROOT` points to a full SDK directory (not just an extracted platform-tools bundle).
-- Install Android SDK Command-line Tools.
-- Accept licenses.
-- Install NDK `27.1.12297006`.
-
-Example (Linux, after sdkmanager is available):
+Fast variants:
 
 ```bash
-export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
-yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" --licenses
-"$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "ndk;27.1.12297006"
+npm run build:apk-local:fast
+npm run build:apk-local:gradle
 ```
 
-Fedora quick fix:
+## Presenter tips and tricks
 
-```bash
-sudo dnf install java-21-openjdk-devel
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-```
+1. Use release APK when presenting to non-technical audiences.
+2. Keep a prepared account with representative history and collection data.
+3. Use one known-good leaf image for consistent demo behavior.
+4. Demonstrate global search with both keyword and hashtag tags.
+5. Show state feedback intentionally (loading, empty, and error clarity).
 
-## Android APK release automation
-The repository includes a GitHub Actions workflow that builds and uploads an APK to GitHub Releases when you push a version tag:
-- Workflow: [../.github/workflows/android-apk-release.yml](../.github/workflows/android-apk-release.yml)
-- Trigger format: vMAJOR.MINOR.PATCH (example: v1.2.3)
+## Potential demo questions and answers
 
-Important for release builds:
-- Set repository variable EXPO_PUBLIC_API_BASE_URL to your deployed backend URL.
-- If omitted, workflow falls back to https://leaflens-backend.up.railway.app.
+Q: How do you prevent confusing blank screens?
+A: The app uses shared `StatusBanner` and `EmptyStateCard` components across screens.
 
-Release flow:
-1. Bump app changes in source.
-2. Create and push a semantic version tag:
+Q: How does search handle medicinal condition queries?
+A: Search checks condition and medicinal fields and supports tag + keyword combinations.
+
+Q: Why keep both Dev Client and release workflows?
+A: Dev Client is fastest for iteration; release APK is most reliable for standalone demos.
+
+Q: Does the app keep users logged in after restart?
+A: Current implementation stores session in memory only.
+
+## Release automation
+
+APK release workflow:
+- `../.github/workflows/android-apk-release.yml`
+
+Tag format:
+- `vMAJOR.MINOR.PATCH` (example `v1.0.1`)
+
+Example:
 
 ```bash
 git tag v1.0.1
 git push origin v1.0.1
 ```
 
-3. GitHub Actions builds the APK and publishes:
-- leaflens-<version>.apk
-- leaflens-<version>.apk.sha256
+Artifacts:
+- `leaflens-<version>.apk`
+- `leaflens-<version>.apk.sha256`
 
