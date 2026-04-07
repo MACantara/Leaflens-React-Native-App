@@ -2,6 +2,11 @@
 
 Date: 2026-04-06
 
+Legacy baseline note:
+- This document describes the archived Java baseline used for migration parity.
+- Java sources now live under `legacy-java-mobile-app/wrapper/`.
+- For active implementation, use `typescript-backend/` and `react-native-app/`.
+
 ## 1. Authentication and Identity
 - User registration with unique email validation and JWT issuance.
 - User login with credential verification and JWT issuance.
