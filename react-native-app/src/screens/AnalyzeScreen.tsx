@@ -8,6 +8,7 @@ import { LeafAnalysisResponse, Session } from '../types/models';
 
 interface AnalyzeScreenProps {
   session?: Session;
+  onExploreTag?: (tag: string) => void;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -20,12 +21,21 @@ function getErrorMessage(error: unknown): string {
   return 'Unexpected error.';
 }
 
-function renderResult(result: LeafAnalysisResponse, imageUri: string, resultImageHeight: number): React.JSX.Element {
+function renderResult(
+  result: LeafAnalysisResponse,
+  imageUri: string,
+  resultImageHeight: number,
+  onExploreTag?: (tag: string) => void
+): React.JSX.Element {
+  const hasTags = result.tags.length > 0;
+  const hasReferences = result.references.length > 0;
+
   return (
     <View style={styles.resultCard}>
       <Image source={{ uri: imageUri }} style={[styles.resultImage, { height: resultImageHeight }]} />
       <Text style={styles.resultTitle}>{result.commonName || 'N/A'}</Text>
       <Text style={styles.resultScientific}>{result.scientificName || 'N/A'}</Text>
+      <Text style={styles.caviteBadge}>{result.isGrownInCavite ? 'Known in Cavite' : 'Cavite status unknown'}</Text>
 
       <Text style={styles.sectionTitle}>Origin</Text>
       <Text style={styles.sectionBody}>{result.origin || 'N/A'}</Text>
@@ -35,11 +45,36 @@ function renderResult(result: LeafAnalysisResponse, imageUri: string, resultImag
 
       <Text style={styles.sectionTitle}>Habitat</Text>
       <Text style={styles.sectionBody}>{result.habitat || 'N/A'}</Text>
+
+      <Text style={styles.sectionTitle}>Tags</Text>
+      {hasTags ? (
+        <View style={styles.tagWrap}>
+          {result.tags.map((tag) => (
+            <Pressable key={tag} style={styles.tagPill} onPress={() => onExploreTag?.(tag)}>
+              <Text style={styles.tagText}>{tag}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.sectionBody}>N/A</Text>
+      )}
+
+      <Text style={styles.sectionTitle}>References</Text>
+      {hasReferences ? (
+        result.references.map((reference) => (
+          <View key={reference.url} style={styles.referenceItem}>
+            <Text style={styles.referenceTitle}>{reference.title}</Text>
+            <Text style={styles.referenceUrl}>{reference.url}</Text>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.sectionBody}>N/A</Text>
+      )}
     </View>
   );
 }
 
-export function AnalyzeScreen({ session }: AnalyzeScreenProps): React.JSX.Element {
+export function AnalyzeScreen({ session, onExploreTag }: AnalyzeScreenProps): React.JSX.Element {
   const [imageUri, setImageUri] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -152,7 +187,7 @@ export function AnalyzeScreen({ session }: AnalyzeScreenProps): React.JSX.Elemen
       {!session && <Text style={styles.helperText}>Sign in to save every successful analysis to your history.</Text>}
 
       {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
-      {result && imageUri && renderResult(result, imageUri, resultImageHeight)}
+      {result && imageUri && renderResult(result, imageUri, resultImageHeight, onExploreTag)}
     </ScrollView>
   );
 }
@@ -262,6 +297,17 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     fontSize: 16
   },
+  caviteBadge: {
+    marginTop: 2,
+    color: '#14532d',
+    backgroundColor: '#dcfce7',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+    fontSize: 12,
+    fontWeight: '700'
+  },
   sectionTitle: {
     marginTop: 8,
     fontSize: 18,
@@ -272,5 +318,37 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 15,
     lineHeight: 22
+  },
+  tagWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8
+  },
+  tagPill: {
+    backgroundColor: '#e2e8f0',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5
+  },
+  tagText: {
+    color: '#1f2937',
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  referenceItem: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 2
+  },
+  referenceTitle: {
+    color: '#111827',
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  referenceUrl: {
+    color: '#475569',
+    fontSize: 12
   }
 });
