@@ -145,10 +145,6 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
     });
   }
 
-  function clearTags(): void {
-    setSelectedTags([]);
-  }
-
   return (
     <View style={styles.root}>
       <View style={styles.searchFloatingCard}>
