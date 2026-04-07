@@ -133,27 +133,19 @@ export default function App(): React.JSX.Element {
   const [menuVisible, setMenuVisible] = useState(false);
   const lastGestureTimestampRef = useRef(0);
   const [iconsLoaded, iconsLoadError] = useFonts({
-    ...Feather.font,
-    ...Ionicons.font,
-    ...MaterialCommunityIcons.font
+    feather: require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf'),
+    ionicons: require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
+    'material-community': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf')
   });
-  const [fontFallbackReady, setFontFallbackReady] = useState(false);
 
   const welcomeText = session ? session.userName : 'Guest';
   const headerTopPadding = Platform.OS === 'android' ? (NativeStatusBar.currentHeight ?? 0) + 8 : 8;
 
   useEffect(() => {
-    if (iconsLoaded || iconsLoadError) {
-      setFontFallbackReady(true);
-      return;
+    if (__DEV__ && iconsLoadError) {
+      console.warn('[LeafLens] Icon font load failed.', iconsLoadError);
     }
-
-    const timer = setTimeout(() => {
-      setFontFallbackReady(true);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [iconsLoaded, iconsLoadError]);
+  }, [iconsLoadError]);
 
   function handleLogout(): void {
     setSession(undefined);
@@ -349,13 +341,13 @@ export default function App(): React.JSX.Element {
     onCloseMenu: closeMenuFromGesture
   });
 
-  const canRenderApp = iconsLoaded || Boolean(iconsLoadError) || fontFallbackReady;
+  const canRenderApp = iconsLoaded || Boolean(iconsLoadError);
 
   const appContent = !canRenderApp ? (
     <SafeAreaView style={styles.root}>
       <ExpoStatusBar style="dark" />
       <View style={styles.startupWrap}>
-        <Text style={styles.startupText}>Loading app...</Text>
+        <Text style={styles.startupText}>{iconsLoadError ? 'Loading app assets...' : 'Loading app...'}</Text>
       </View>
     </SafeAreaView>
   ) : !session ? (
