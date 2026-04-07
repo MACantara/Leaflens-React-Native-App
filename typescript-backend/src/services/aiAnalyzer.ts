@@ -2,6 +2,82 @@ import { GoogleGenAI } from '@google/genai';
 import { env } from '../env.js';
 import type { LeafAnalysisResponse } from '../types.js';
 
+const NON_PLANT_TERMS = [
+  'not a plant',
+  'non plant',
+  'non-plant',
+  'not plant',
+  'not a leaf',
+  'not a leaf image',
+  'no plant',
+  'no leaf',
+  'does not contain a plant',
+  'does not appear to be a plant',
+  'cannot identify plant',
+  'cannot identify a plant',
+  'not applicable',
+  'outside domain'
+];
+
+const STANDARD_NON_PLANT_RESPONSE: LeafAnalysisResponse = {
+  commonName: 'Not a plant',
+  scientificName: 'Not a plant',
+  origin: 'N/A',
+  uses: 'N/A',
+  habitat: 'N/A',
+  confidenceScore: 0,
+  confidenceLabel: 'Low',
+  keyCharacteristics: ['Image does not appear to contain a plant leaf.'],
+  careTips: 'Retake the photo with a single clear leaf in frame and good lighting.',
+  safetyNotes: 'Do not consume unknown specimens without expert confirmation.',
+  identificationNotes: 'The uploaded image does not appear to be a plant/leaf photo.',
+  isGrownInCavite: false,
+  tags: ['Not a Plant']
+};
+
+function normalizeForMatching(value: unknown): string {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function hasNonPlantTerm(value: unknown): boolean {
+  const normalized = normalizeForMatching(value);
+  if (!normalized) {
+    return false;
+  }
+
+  return NON_PLANT_TERMS.some((term) => normalized.includes(term));
+}
+
+function isNonPlantAnalysisCandidate(candidate: Record<string, unknown>): boolean {
+  if (candidate.isPlant === false || candidate.isLeaf === false || candidate.isApplicable === false) {
+    return true;
+  }
+
+  const textSignals = [
+    candidate.commonName,
+    candidate.common_name,
+    candidate.scientificName,
+    candidate.scientific_name,
+    candidate.identificationNotes,
+    candidate.identification_notes,
+    candidate.origin,
+    candidate.habitat
+  ];
+
+  if (textSignals.some((value) => hasNonPlantTerm(value))) {
+    return true;
+  }
+
+  if (Array.isArray(candidate.tags) && candidate.tags.some((value) => hasNonPlantTerm(value))) {
+    return true;
+  }
+
+  return false;
+}
+
 function extractTextContent(content: unknown): string {
   if (typeof content === 'string') {
     return content;
@@ -189,6 +265,11 @@ function normalizeAnalysis(value: unknown): LeafAnalysisResponse {
   }
 
   const candidate = value as Record<string, unknown>;
+
+  if (isNonPlantAnalysisCandidate(candidate)) {
+    return STANDARD_NON_PLANT_RESPONSE;
+  }
+
   const uses = normalizeUsesText(candidate.uses ?? candidate.usage);
   if (!uses || uses === 'N/A') {
     throw new Error('AI response missing required field: uses');
@@ -222,6 +303,19 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
   const prompt = [
     'Analyze this leaf image and provide the information in the following JSON format.',
     'IMPORTANT: Return ONLY the raw JSON object. Do NOT include markdown code blocks, backticks, or any explanation text.',
+    'If the image is not a plant/leaf (for example, object, person, animal, document, or unclear scene), still return the same JSON schema using this exact fallback intent:',
+    '- commonName: "Not a plant"',
+    '- scientificName: "Not a plant"',
+    '- origin: "N/A"',
+    '- uses: "N/A"',
+    '- habitat: "N/A"',
+    '- confidenceScore: 0',
+    '- confidenceLabel: "Low"',
+    '- keyCharacteristics: ["Image does not appear to contain a plant leaf."]',
+    '- careTips: "Retake the photo with a single clear leaf in frame and good lighting."',
+    '- safetyNotes: "Do not consume unknown specimens without expert confirmation."',
+    '- identificationNotes: "The uploaded image does not appear to be a plant/leaf photo."',
+    '- tags: ["Not a Plant"]',
     'Required format:',
     '{',
     '  "scientificName": "scientific name here",',
@@ -277,6 +371,10 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
   try {
     parsed = JSON.parse(jsonText) as unknown;
   } catch (error) {
+    if (hasNonPlantTerm(content)) {
+      return STANDARD_NON_PLANT_RESPONSE;
+    }
+
     const parseMessage = error instanceof Error ? error.message : 'Unknown parse error';
     throw new Error(`AI response JSON parsing failed: ${parseMessage}`);
   }
