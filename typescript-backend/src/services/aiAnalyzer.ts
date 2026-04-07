@@ -180,24 +180,21 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
   const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
 
   const prompt = [
-    'Analyze the plant image and return only a valid JSON object with this exact shape:',
+    'Analyze this leaf image and provide the information in the following JSON format.',
+    'IMPORTANT: Return ONLY the raw JSON object. Do NOT include markdown code blocks, backticks, or any explanation text.',
+    'Required format:',
     '{',
-    '  "commonName": "string",',
-    '  "scientificName": "string",',
-    '  "origin": "1-2 sentence origin summary",',
-    '  "uses": "multiline bullet list where each line starts with \"• \"",',
-    '  "habitat": "2-4 sentence habitat summary",',
-    '  "isGrownInCavite": true,',
-    '  "tags": ["lowercase-topic-tag"]',
+    '  "scientificName": "scientific name here",',
+    '  "commonName": "common name here",',
+    '  "origin": "origin information here",',
+    '  "uses": "uses and benefits here",',
+    '  "habitat": "where it usually grows with specific location details",',
+    '  "tags": ["Tag1", "Tag2", "Tag3"]',
     '}',
-    'Requirements:',
-    '- commonName: common market name.',
-    '- scientificName: binomial name when known.',
-    '- origin: concise and factual.',
-    '- uses: 3-5 useful bullet points.',
-    '- habitat: concise growing conditions and common regions.',
-    '- tags: 4-8 short lowercase tags without #.',
-    '- Return JSON only. Do not include markdown, commentary, or extra keys.'
+    'For "tags", generate 2-5 short category labels that describe this plant\'s primary uses.',
+    'Examples: "Medicinal", "Culinary", "Anti-inflammatory", "Immune Booster", "Skin Care",',
+    '"Aromatic", "Anti-diabetic", "Ornamental". Use your own judgment based on the plant.',
+    'Return only valid JSON with these exact 6 fields, nothing else.'
   ].join('\n');
 
   const imageBase64 = image.toString('base64');
