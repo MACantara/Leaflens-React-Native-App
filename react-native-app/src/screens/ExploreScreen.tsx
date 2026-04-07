@@ -152,19 +152,6 @@ export function ExploreScreen({ session, preselectedTag, preselectedTagVersion }
   return (
     <View style={styles.root}>
       <View style={styles.searchFloatingCard}>
-        <Pressable
-          style={styles.iconCircleButton}
-          onPress={() => {
-            setKeyword('');
-            clearTags();
-            void runInitialLoad(async () => {
-              await fetchExplore('', []);
-            });
-          }}
-        >
-          <Feather name="x" size={27} color="#111111" />
-        </Pressable>
-
         <TextInput
           style={styles.searchInput}
           placeholder="Search..."
