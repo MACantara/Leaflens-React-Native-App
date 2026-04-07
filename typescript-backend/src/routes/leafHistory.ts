@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { collections, nextSequence, type LeafDoc } from '../db.js';
-import { requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
+import { requireAuth, type AuthenticatedRequest, verifyToken } from '../middleware/auth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { HttpError } from '../utils/errors.js';
 import { toLeafDto } from '../utils/leafMapper.js';
@@ -216,9 +216,7 @@ leafHistoryRouter.get(
 
 leafHistoryRouter.get(
   '/leaf/:leafId/image',
-  requireAuth,
   asyncHandler(async (req, res) => {
-    const authReq = req as AuthenticatedRequest;
     const leafId = Number(req.params.leafId);
     const dbCollections = await collections();
 
@@ -246,15 +244,30 @@ leafHistoryRouter.get(
       return;
     }
 
-    const requestUserId = authReq.authUser?.userId;
-    if (!Number.isFinite(requestUserId)) {
-      throw new HttpError(401, 'Invalid authenticated user');
+    const authorization = req.header('Authorization');
+    const headerToken = authorization && authorization.startsWith('Bearer ') ? authorization.slice(7) : undefined;
+    const queryToken = typeof req.query.token === 'string' ? req.query.token : undefined;
+    const authToken = headerToken || queryToken;
+
+    let requestUserId: number | undefined;
+    if (authToken) {
+      try {
+        requestUserId = verifyToken(authToken).userId;
+      } catch {
+        throw new HttpError(401, 'Invalid authentication token');
+      }
     }
 
-    const ownerCanAccess = isLeafOwner({ ownerUserId: image.ownerUserId, userId: requestUserId as number });
+    const ownerCanAccess = Number.isFinite(requestUserId)
+      ? isLeafOwner({ ownerUserId: image.ownerUserId, userId: requestUserId as number })
+      : false;
     const isPublic = Boolean(image.isImagePublic);
 
     if (!ownerCanAccess && !isPublic) {
+      if (!Number.isFinite(requestUserId)) {
+        throw new HttpError(401, 'Missing authentication token');
+      }
+
       throw new HttpError(403, 'This image is private and not publicly shared');
     }
 

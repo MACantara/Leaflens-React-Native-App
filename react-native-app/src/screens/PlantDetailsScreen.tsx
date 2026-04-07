@@ -140,7 +140,13 @@ export function PlantDetailsScreen({
 
       {leaf ? (
         <View style={styles.detailCard}>
-          <Image source={getLeafImageSource(leaf.leafId, session.token)} style={styles.detailImage} />
+          {leaf.imageFilename || leaf.imageContentType || leaf.imageSize ? (
+            <Image source={getLeafImageSource(leaf.leafId, session.token)} style={styles.detailImage} />
+          ) : (
+            <View style={styles.detailImagePlaceholder}>
+              <Text style={styles.detailImagePlaceholderText}>No image available</Text>
+            </View>
+          )}
           <Text style={styles.detailTitle}>{leaf.commonName || 'N/A'}</Text>
           <Text style={styles.detailScientific}>{leaf.scientificName || 'N/A'}</Text>
           {selectedLeafCavite && <Text style={styles.caviteBadge}>Grows in Cavite</Text>}
@@ -247,6 +253,19 @@ const styles = StyleSheet.create({
     height: 390,
     borderRadius: 20,
     backgroundColor: '#d1d5db'
+  },
+  detailImagePlaceholder: {
+    width: '100%',
+    height: 390,
+    borderRadius: 20,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  detailImagePlaceholderText: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '600'
   },
   detailTitle: {
     fontSize: 18,

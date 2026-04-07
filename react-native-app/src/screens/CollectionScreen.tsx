@@ -141,7 +141,13 @@ export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScree
               onOpenLeafDetails?.(item.leafId);
             }}
           >
-            <Image source={getLeafImageSource(item.leafId, session.token)} style={[styles.image, { height: cardImageHeight }]} />
+            {item.imageFilename || item.imageContentType || item.imageSize ? (
+              <Image source={getLeafImageSource(item.leafId, session.token)} style={[styles.image, { height: cardImageHeight }]} />
+            ) : (
+              <View style={[styles.imagePlaceholder, { height: cardImageHeight }]}>
+                <Text style={styles.imagePlaceholderText}>No image available</Text>
+              </View>
+            )}
             <Text style={styles.cardTitle}>{item.commonName || 'N/A'}</Text>
             <Text style={styles.cardMeta}>{item.scientificName || 'N/A'}</Text>
           </Pressable>
@@ -249,6 +255,18 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 20,
     backgroundColor: '#e2e8f0'
+  },
+  imagePlaceholder: {
+    width: '100%',
+    borderRadius: 20,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  imagePlaceholderText: {
+    color: '#6b7280',
+    fontSize: 13,
+    fontWeight: '600'
   },
   cardTitle: {
     fontSize: 21,

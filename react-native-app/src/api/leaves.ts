@@ -100,11 +100,15 @@ export function getLeafImageUrl(leafId: number): string {
   return `${getApiBaseUrl()}/api/v1/leaf-history/leaf/${leafId}/image`;
 }
 
-export function getLeafImageSource(leafId: number, token: string): { uri: string; headers: { Authorization: string } } {
+export function getLeafImageSource(leafId: number, token?: string): { uri: string } {
+  const baseUrl = getLeafImageUrl(leafId);
+
+  if (!token) {
+    return { uri: baseUrl };
+  }
+
+  const separator = baseUrl.includes('?') ? '&' : '?';
   return {
-    uri: getLeafImageUrl(leafId),
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    uri: `${baseUrl}${separator}token=${encodeURIComponent(token)}`
   };
 }
