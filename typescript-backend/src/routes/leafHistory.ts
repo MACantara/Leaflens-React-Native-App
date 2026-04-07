@@ -23,6 +23,14 @@ function assertSameUser(req: AuthenticatedRequest, userId: number): void {
   }
 }
 
+function isLeafOwner(params: { ownerUserId?: number; userId: number }): boolean {
+  if (typeof params.ownerUserId !== 'number') {
+    return false;
+  }
+
+  return params.ownerUserId === params.userId;
+}
+
 function parseBooleanInput(value: unknown): boolean {
   if (typeof value === 'boolean') {
     return value;
@@ -116,6 +124,7 @@ leafHistoryRouter.post(
     const now = new Date();
     const leafDoc: LeafDoc = {
       leafId,
+      ownerUserId: userId,
       commonName,
       scientificName,
       origin,
@@ -128,6 +137,7 @@ leafHistoryRouter.post(
       imageStorageProvider: 's3',
       imageStorageKey: uploadedImage.key,
       imageStorageBucket: uploadedImage.bucket,
+      isImagePublic: false,
       tags,
       createdAt: now,
       updatedAt: now
@@ -208,6 +218,7 @@ leafHistoryRouter.get(
   '/leaf/:leafId/image',
   requireAuth,
   asyncHandler(async (req, res) => {
+    const authReq = req as AuthenticatedRequest;
     const leafId = Number(req.params.leafId);
     const dbCollections = await collections();
 
@@ -219,6 +230,8 @@ leafHistoryRouter.get(
       { leafId },
       {
         projection: {
+          ownerUserId: 1,
+          isImagePublic: 1,
           imageStorageKey: 1,
           imageData: 1,
           imageContentType: 1,
@@ -231,6 +244,18 @@ leafHistoryRouter.get(
     if (!image) {
       res.status(404).end();
       return;
+    }
+
+    const requestUserId = authReq.authUser?.userId;
+    if (!Number.isFinite(requestUserId)) {
+      throw new HttpError(401, 'Invalid authenticated user');
+    }
+
+    const ownerCanAccess = isLeafOwner({ ownerUserId: image.ownerUserId, userId: requestUserId as number });
+    const isPublic = Boolean(image.isImagePublic);
+
+    if (!ownerCanAccess && !isPublic) {
+      throw new HttpError(403, 'This image is private and not publicly shared');
     }
 
     if (image.imageStorageKey) {
@@ -270,6 +295,61 @@ leafHistoryRouter.get(
     }
 
     res.send(image.imageData);
+  })
+);
+
+leafHistoryRouter.put(
+  '/leaf/:leafId/image-visibility',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const authReq = req as AuthenticatedRequest;
+    const leafId = Number(req.params.leafId);
+    const dbCollections = await collections();
+
+    if (!Number.isFinite(leafId)) {
+      throw new HttpError(400, 'Invalid leafId');
+    }
+
+    if (!authReq.authUser || !Number.isFinite(authReq.authUser.userId)) {
+      throw new HttpError(401, 'Invalid authenticated user');
+    }
+
+    const leaf = await dbCollections.leaves.findOne(
+      { leafId },
+      {
+        projection: {
+          leafId: 1,
+          ownerUserId: 1
+        }
+      }
+    );
+
+    if (!leaf) {
+      throw new HttpError(404, 'Leaf not found');
+    }
+
+    if (!isLeafOwner({ ownerUserId: leaf.ownerUserId, userId: authReq.authUser.userId })) {
+      throw new HttpError(403, 'Only the owner can change image sharing visibility');
+    }
+
+    if (typeof req.body?.isImagePublic !== 'boolean') {
+      throw new HttpError(400, 'isImagePublic must be a boolean');
+    }
+
+    await dbCollections.leaves.updateOne(
+      { leafId },
+      {
+        $set: {
+          isImagePublic: req.body.isImagePublic,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    res.json({
+      leafId,
+      isImagePublic: req.body.isImagePublic
+    });
   })
 );
 

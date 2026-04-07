@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { deleteLeaf, getUserHistory, getUserLeafCount } from '../api/leaves';
+import { deleteLeaf, getUserHistory, getUserLeafCount, updateLeafImageVisibility } from '../api/leaves';
 import { ApiError } from '../api/client';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
@@ -23,6 +23,7 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
   const [history, setHistory] = useState<LeafItem[]>([]);
   const [leafCount, setLeafCount] = useState(0);
   const [deletingLeafId, setDeletingLeafId] = useState<number | undefined>();
+  const [updatingVisibilityLeafId, setUpdatingVisibilityLeafId] = useState<number | undefined>();
   const [error, setError] = useState('');
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
 
@@ -55,6 +56,31 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
     }
   }
 
+  async function onToggleImageVisibility(item: LeafItem): Promise<void> {
+    setUpdatingVisibilityLeafId(item.leafId);
+    setError('');
+
+    const nextValue = !Boolean(item.isImagePublic);
+
+    try {
+      await updateLeafImageVisibility(item.leafId, nextValue, session.token);
+      setHistory((current) =>
+        current.map((leaf) =>
+          leaf.leafId === item.leafId
+            ? {
+                ...leaf,
+                isImagePublic: nextValue
+              }
+            : leaf
+        )
+      );
+    } catch (visibilityError) {
+      setError(toErrorText(visibilityError));
+    } finally {
+      setUpdatingVisibilityLeafId(undefined);
+    }
+  }
+
   useEffect(() => {
     void runInitialLoad(loadHistory);
   }, [runInitialLoad, loadHistory]);
@@ -76,16 +102,41 @@ export function HistoryScreen({ session }: HistoryScreenProps): React.JSX.Elemen
         refreshing={refreshing}
         renderItem={({ item }) => (
           <View style={styles.itemPill}>
-            <Text style={styles.itemText}>{item.commonName || 'Cannot identify plant from image'}</Text>
-            <Pressable
-              style={[styles.deleteButton, deletingLeafId === item.leafId && styles.disabledButton]}
-              onPress={() => {
-                void onDeleteLeaf(item.leafId);
-              }}
-              disabled={deletingLeafId === item.leafId}
-            >
-              <Text style={styles.deleteButtonLabel}>{deletingLeafId === item.leafId ? 'Deleting...' : 'Delete'}</Text>
-            </Pressable>
+            <View style={styles.itemTopRow}>
+              <Text style={styles.itemText}>{item.commonName || 'Cannot identify plant from image'}</Text>
+            </View>
+
+            <Text style={styles.shareStateText}>
+              {item.isImagePublic ? 'Image visibility: Public' : 'Image visibility: Private'}
+            </Text>
+
+            <View style={styles.itemActionsRow}>
+              <Pressable
+                style={[styles.shareButton, updatingVisibilityLeafId === item.leafId && styles.disabledButton]}
+                onPress={() => {
+                  void onToggleImageVisibility(item);
+                }}
+                disabled={updatingVisibilityLeafId === item.leafId}
+              >
+                <Text style={styles.shareButtonLabel}>
+                  {updatingVisibilityLeafId === item.leafId
+                    ? 'Updating...'
+                    : item.isImagePublic
+                      ? 'Make Private'
+                      : 'Share Publicly'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.deleteButton, deletingLeafId === item.leafId && styles.disabledButton]}
+                onPress={() => {
+                  void onDeleteLeaf(item.leafId);
+                }}
+                disabled={deletingLeafId === item.leafId}
+              >
+                <Text style={styles.deleteButtonLabel}>{deletingLeafId === item.leafId ? 'Deleting...' : 'Delete'}</Text>
+              </Pressable>
+            </View>
           </View>
         )}
         ListEmptyComponent={!loading ? <Text style={styles.helperText}>No history yet.</Text> : null}
@@ -125,16 +176,38 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     gap: 8
+  },
+  itemTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   itemText: {
     color: '#111827',
     fontSize: 15,
     fontWeight: '500',
     flex: 1
+  },
+  shareStateText: {
+    color: '#475569',
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  itemActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  shareButton: {
+    borderRadius: 10,
+    backgroundColor: '#e0f2fe',
+    paddingHorizontal: 10,
+    paddingVertical: 7
+  },
+  shareButtonLabel: {
+    color: '#0c4a6e',
+    fontWeight: '700',
+    fontSize: 12
   },
   deleteButton: {
     borderRadius: 10,

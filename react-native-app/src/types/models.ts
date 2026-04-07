@@ -27,10 +27,14 @@ export interface AnalyzeAndSaveResponse {
   message: string;
   analysis: LeafAnalysisResponse;
   userId: number;
+  leafId?: number;
+  ownerUserId?: number;
+  isImagePublic?: boolean;
 }
 
 export interface LeafItem {
   leafId: number;
+  ownerUserId: number;
   commonName: string;
   scientificName: string;
   origin: string;
@@ -40,7 +44,13 @@ export interface LeafItem {
   imageFilename?: string;
   imageContentType?: string;
   imageSize?: number;
+  isImagePublic?: boolean;
   tags?: string[];
+}
+
+export interface LeafImageVisibilityResponse {
+  leafId: number;
+  isImagePublic: boolean;
 }
 
 export interface LeafCollectionResponse {

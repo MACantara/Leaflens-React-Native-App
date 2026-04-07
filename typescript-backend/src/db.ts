@@ -18,6 +18,7 @@ export interface UserDoc {
 
 export interface LeafDoc {
   leafId: number;
+  ownerUserId: number;
   commonName: string;
   scientificName: string;
   origin: string;
@@ -32,6 +33,7 @@ export interface LeafDoc {
   imageStorageKey?: string;
   imageStorageBucket?: string;
   imageStorageEndpoint?: string;
+  isImagePublic?: boolean;
   tags: string[];
   createdAt: Date;
   updatedAt: Date;

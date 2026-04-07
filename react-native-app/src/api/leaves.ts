@@ -3,6 +3,7 @@ import {
   AnalyzeAndSaveResponse,
   LeafAnalysisResponse,
   LeafCollectionResponse,
+  LeafImageVisibilityResponse,
   LeafItem
 } from '../types/models';
 
@@ -80,6 +81,18 @@ export function deleteLeaf(leafId: number, token: string): Promise<string> {
   return apiRequest<string>(`/api/v1/leaf-history/leaf/${leafId}`, {
     method: 'DELETE',
     token
+  });
+}
+
+export function updateLeafImageVisibility(
+  leafId: number,
+  isImagePublic: boolean,
+  token: string
+): Promise<LeafImageVisibilityResponse> {
+  return apiRequest<LeafImageVisibilityResponse>(`/api/v1/leaf-history/leaf/${leafId}/image-visibility`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify({ isImagePublic })
   });
 }
 

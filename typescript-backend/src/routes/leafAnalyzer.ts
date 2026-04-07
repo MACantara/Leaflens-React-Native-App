@@ -128,6 +128,7 @@ leafAnalyzerRouter.post(
 
     const leafDoc: LeafDoc = {
       leafId,
+      ownerUserId: userId,
       commonName: enriched.commonName,
       scientificName: enriched.scientificName || '',
       origin: enriched.origin || '',
@@ -140,6 +141,7 @@ leafAnalyzerRouter.post(
       imageStorageProvider: 's3',
       imageStorageKey: uploadedImage.key,
       imageStorageBucket: uploadedImage.bucket,
+      isImagePublic: false,
       tags: normalizedTags,
       createdAt: now,
       updatedAt: now
@@ -164,7 +166,10 @@ leafAnalyzerRouter.post(
     res.json({
       message: 'Leaf analyzed and saved successfully',
       analysis: enriched,
-      userId
+      userId,
+      leafId,
+      ownerUserId: userId,
+      isImagePublic: false
     });
   })
 );

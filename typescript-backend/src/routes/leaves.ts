@@ -38,7 +38,9 @@ leavesRouter.get(
 
     const result = await dbCollections.leaves.find(filter).sort({ leafId: -1 }).toArray();
 
-    res.json(result.map((leaf) => toLeafDto(leaf)));
+    const visibleLeaves = result.filter((leaf) => Boolean(leaf.isImagePublic));
+
+    res.json(visibleLeaves.map((leaf) => toLeafDto(leaf)));
   })
 );
 
@@ -62,6 +64,11 @@ leavesRouter.post(
     const leafExists = await dbCollections.leaves.findOne({ leafId });
     if (!leafExists) {
       throw new HttpError(404, 'Leaf not found');
+    }
+
+    const isPublic = Boolean(leafExists.isImagePublic);
+    if (!isPublic) {
+      throw new HttpError(403, 'Leaf image is private and cannot be saved publicly');
     }
 
     const userExists = await dbCollections.users.findOne({ userId });
