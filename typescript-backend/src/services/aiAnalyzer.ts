@@ -70,6 +70,54 @@ function toBoolean(value: unknown): boolean {
   return false;
 }
 
+function normalizeTextBlock(value: unknown, fallback: string): string {
+  if (Array.isArray(value)) {
+    const joined = value.map((entry) => String(entry).trim()).filter((entry) => entry.length > 0).join(' ');
+    return joined || fallback;
+  }
+
+  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  return text || fallback;
+}
+
+function normalizeUsesText(value: unknown): string {
+  if (Array.isArray(value)) {
+    const bullets = value
+      .map((entry) => String(entry).trim())
+      .filter((entry) => entry.length > 0)
+      .map((entry) => `• ${entry.replace(/^[-•\d.\s]+/, '').trim()}`);
+
+    return bullets.length > 0 ? bullets.join('\n') : 'N/A';
+  }
+
+  const rawText = String(value ?? '').trim();
+  if (!rawText) {
+    return 'N/A';
+  }
+
+  const lineBullets = rawText
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => line.replace(/^[-*\d.\s]+/, '').trim());
+
+  if (lineBullets.length >= 2) {
+    return lineBullets.map((line) => `• ${line}`).join('\n');
+  }
+
+  const semicolonBullets = rawText
+    .split(';')
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
+
+  if (semicolonBullets.length >= 2) {
+    return semicolonBullets.map((line) => `• ${line}`).join('\n');
+  }
+
+  const single = rawText.replace(/^[-*\d.\s]+/, '').trim();
+  return `• ${single}`;
+}
+
 function normalizeTags(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -98,11 +146,11 @@ function normalizeAnalysis(value: unknown): LeafAnalysisResponse {
   const candidate = value as Record<string, unknown>;
 
   return {
-    commonName: String(candidate.commonName ?? candidate.common_name ?? 'Unknown leaf'),
-    scientificName: String(candidate.scientificName ?? candidate.scientific_name ?? 'Unknown species'),
-    origin: String(candidate.origin ?? 'Unknown'),
-    uses: String(candidate.uses ?? candidate.usage ?? 'N/A'),
-    habitat: String(candidate.habitat ?? 'N/A'),
+    commonName: normalizeTextBlock(candidate.commonName ?? candidate.common_name, 'Unknown leaf'),
+    scientificName: normalizeTextBlock(candidate.scientificName ?? candidate.scientific_name, 'Unknown species'),
+    origin: normalizeTextBlock(candidate.origin, 'Unknown'),
+    uses: normalizeUsesText(candidate.uses ?? candidate.usage),
+    habitat: normalizeTextBlock(candidate.habitat, 'N/A'),
     isGrownInCavite: toBoolean(candidate.isGrownInCavite ?? candidate.is_grown_in_cavite),
     tags: normalizeTags(candidate.tags)
   };
@@ -132,17 +180,24 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
   const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
 
   const prompt = [
-    'Analyze the plant leaf image and return only a valid JSON object with this exact shape:',
+    'Analyze the plant image and return only a valid JSON object with this exact shape:',
     '{',
     '  "commonName": "string",',
     '  "scientificName": "string",',
-    '  "origin": "string",',
-    '  "uses": "string",',
-    '  "habitat": "string",',
+    '  "origin": "1-2 sentence origin summary",',
+    '  "uses": "multiline bullet list where each line starts with \"• \"",',
+    '  "habitat": "2-4 sentence habitat summary",',
     '  "isGrownInCavite": true,',
-    '  "tags": ["string"]',
+    '  "tags": ["lowercase-topic-tag"]',
     '}',
-    'Do not include markdown, explanation, or extra keys.'
+    'Requirements:',
+    '- commonName: common market name.',
+    '- scientificName: binomial name when known.',
+    '- origin: concise and factual.',
+    '- uses: 3-5 useful bullet points.',
+    '- habitat: concise growing conditions and common regions.',
+    '- tags: 4-8 short lowercase tags without #.',
+    '- Return JSON only. Do not include markdown, commentary, or extra keys.'
   ].join('\n');
 
   const imageBase64 = image.toString('base64');
