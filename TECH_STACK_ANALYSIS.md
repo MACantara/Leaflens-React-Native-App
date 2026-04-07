@@ -2,10 +2,14 @@
 
 Date: 2026-04-06
 
+Legacy scope note:
+- This analysis covers the archived Java backend implementation now located in `legacy-java-mobile-app/`.
+- The active stack for ongoing development is TypeScript backend + React Native app.
+
 ## 1) Executive Summary
 Leaflens is a Java 21 backend application built with Spring Boot 3.5.4. It exposes a REST API for leaf identification and collection management, integrates an LLM through Spring AI using an OpenAI-compatible interface (configured for Gemini-style usage), persists data in PostgreSQL via Spring Data JPA, manages schema evolution with Flyway SQL migrations, secures endpoints with Spring Security + JWT, and supports containerized deployment with Docker and Docker Compose.
 
-There is no frontend code in this repository; this is an API-focused backend service.
+In that archived module, there is no frontend code; it is an API-focused backend service.
 
 ## 2) Core Stack Matrix
 | Layer | Technology | Version / Variant | Evidence |
