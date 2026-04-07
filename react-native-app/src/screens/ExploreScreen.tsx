@@ -152,6 +152,11 @@ export function ExploreScreen({
 
             <Text style={styles.leafTitle}>{item.commonName || 'Unknown'}</Text>
             <Text style={styles.leafMetaValue}>{item.scientificName || 'N/A'}</Text>
+            {Array.isArray(item.medicalConditions) && item.medicalConditions.length > 0 ? (
+              <Text style={styles.medicalHintText}>May help with: {item.medicalConditions.join(', ')}</Text>
+            ) : item.medicinalUses && item.medicinalUses.trim().length > 0 && item.medicinalUses.trim().toLowerCase() !== 'n/a' ? (
+              <Text style={styles.medicalHintText}>Medicinal use: {item.medicinalUses.trim()}</Text>
+            ) : null}
 
             {session && item.ownerUserId === session.userId ? (
               <View style={styles.ownerButton}>
@@ -241,6 +246,13 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 15,
     lineHeight: 20
+  },
+  medicalHintText: {
+    marginTop: 6,
+    color: '#0f766e',
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600'
   },
   saveButton: {
     marginTop: 10,

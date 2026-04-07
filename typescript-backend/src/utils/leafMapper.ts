@@ -8,6 +8,8 @@ export interface LeafDto {
   scientificName: string;
   origin: string;
   usage: string;
+  medicinalUses?: string;
+  medicalConditions?: string[];
   habitat: string;
   confidenceScore?: number;
   confidenceLabel?: string;
@@ -37,6 +39,8 @@ export function toLeafDto(leaf: LeafDoc): LeafDto {
     scientificName: leaf.scientificName,
     origin: leaf.origin,
     usage: leaf.usage,
+    medicinalUses: leaf.medicinalUses,
+    medicalConditions: leaf.medicalConditions ?? [],
     habitat: leaf.habitat,
     confidenceScore: leaf.confidenceScore,
     confidenceLabel: leaf.confidenceLabel,

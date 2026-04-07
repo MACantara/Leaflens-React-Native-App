@@ -18,6 +18,8 @@ export interface LeafAnalysisResponse {
   scientificName: string;
   origin: string;
   uses: string;
+  medicinalUses: string;
+  medicalConditions: string[];
   habitat: string;
   confidenceScore: number;
   confidenceLabel: string;
@@ -45,6 +47,8 @@ export interface LeafItem {
   scientificName: string;
   origin: string;
   usage: string;
+  medicinalUses?: string;
+  medicalConditions?: string[];
   habitat: string;
   confidenceScore?: number;
   confidenceLabel?: string;

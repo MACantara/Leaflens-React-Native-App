@@ -30,6 +30,8 @@ function renderResult(
 ): React.JSX.Element {
   const hasTags = result.tags.length > 0;
   const hasKeyCharacteristics = result.keyCharacteristics.length > 0;
+  const hasMedicalConditions = Array.isArray(result.medicalConditions) && result.medicalConditions.length > 0;
+  const medicinalUsesText = String(result.medicinalUses ?? '').trim();
 
   const confidenceColor =
     result.confidenceLabel.toLowerCase() === 'high'
@@ -63,6 +65,24 @@ function renderResult(
 
       <Text style={styles.sectionTitle}>Uses</Text>
       <Text style={styles.sectionBody}>{result.uses || 'N/A'}</Text>
+
+      <Text style={styles.sectionTitle}>Medicinal Uses</Text>
+      <Text style={styles.sectionBody}>
+        {medicinalUsesText && medicinalUsesText.toLowerCase() !== 'n/a' ? medicinalUsesText : 'None known.'}
+      </Text>
+
+      <Text style={styles.sectionTitle}>Conditions It May Help With</Text>
+      {hasMedicalConditions ? (
+        <View style={styles.conditionWrap}>
+          {result.medicalConditions.map((condition) => (
+            <View key={condition} style={styles.conditionPill}>
+              <Text style={styles.conditionText}>{condition}</Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.sectionBody}>None listed.</Text>
+      )}
 
       <Text style={styles.sectionTitle}>Habitat</Text>
       <Text style={styles.sectionBody}>{result.habitat || 'N/A'}</Text>
@@ -421,6 +441,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8
+  },
+  conditionWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8
+  },
+  conditionPill: {
+    backgroundColor: '#ecfeff',
+    borderColor: '#a5f3fc',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5
+  },
+  conditionText: {
+    color: '#0e7490',
+    fontSize: 12,
+    fontWeight: '600'
   },
   tagPill: {
     backgroundColor: '#e2e8f0',

@@ -24,6 +24,8 @@ export interface LeafDoc {
   scientificName: string;
   origin: string;
   usage: string;
+  medicinalUses?: string;
+  medicalConditions?: string[];
   habitat: string;
   confidenceScore?: number;
   confidenceLabel?: string;

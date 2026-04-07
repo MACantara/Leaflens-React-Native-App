@@ -42,7 +42,9 @@ export function PlantDetailsScreen({
 
   const selectedLeafTags = useMemo(() => leaf?.tags ?? [], [leaf]);
   const selectedLeafCharacteristics = useMemo(() => leaf?.keyCharacteristics ?? [], [leaf]);
+  const selectedLeafMedicalConditions = useMemo(() => leaf?.medicalConditions ?? [], [leaf]);
   const selectedLeafCavite = Boolean(leaf?.isGrownInCavite);
+  const selectedLeafMedicinalUses = String(leaf?.medicinalUses ?? '').trim();
 
   const loadLeaf = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -157,6 +159,26 @@ export function PlantDetailsScreen({
 
           <Text style={styles.detailSectionTitle}>Uses</Text>
           <Text style={styles.detailSectionBody}>{leaf.usage || 'N/A'}</Text>
+
+          <Text style={styles.detailSectionTitle}>Medicinal Uses</Text>
+          <Text style={styles.detailSectionBody}>
+            {selectedLeafMedicinalUses && selectedLeafMedicinalUses.toLowerCase() !== 'n/a'
+              ? selectedLeafMedicinalUses
+              : 'None known.'}
+          </Text>
+
+          <Text style={styles.detailSectionTitle}>Conditions It May Help With</Text>
+          {selectedLeafMedicalConditions.length > 0 ? (
+            <View style={styles.tagWrap}>
+              {selectedLeafMedicalConditions.map((condition) => (
+                <View key={condition} style={styles.conditionPill}>
+                  <Text style={styles.conditionText}>{condition}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.detailSectionBody}>None listed.</Text>
+          )}
 
           <Text style={styles.detailSectionTitle}>Habitat</Text>
           <Text style={styles.detailSectionBody}>{leaf.habitat || 'N/A'}</Text>
@@ -362,6 +384,19 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5
+  },
+  conditionPill: {
+    backgroundColor: '#ecfeff',
+    borderWidth: 1,
+    borderColor: '#a5f3fc',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5
+  },
+  conditionText: {
+    color: '#0e7490',
+    fontSize: 12,
+    fontWeight: '600'
   },
   tagText: {
     color: '#1f2937',

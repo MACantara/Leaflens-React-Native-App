@@ -28,6 +28,8 @@ leavesRouter.get(
         { scientificName: keyword },
         { origin: keyword },
         { usage: keyword },
+        { medicinalUses: keyword },
+        { medicalConditions: keyword },
         { habitat: keyword }
       ];
     }

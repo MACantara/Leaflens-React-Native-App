@@ -71,6 +71,30 @@ function normalizeTagsInput(value: unknown): string[] {
     });
 }
 
+function normalizeMedicalConditionsInput(value: unknown): string[] {
+  const rawValues: string[] = [];
+
+  if (Array.isArray(value)) {
+    value.forEach((entry) => rawValues.push(String(entry)));
+  } else if (typeof value === 'string') {
+    rawValues.push(...value.split(','));
+  }
+
+  const seen = new Set<string>();
+
+  return rawValues
+    .map((condition) => condition.trim())
+    .filter((condition) => condition.length > 0)
+    .filter((condition) => {
+      const lowered = condition.toLowerCase();
+      if (seen.has(lowered)) {
+        return false;
+      }
+      seen.add(lowered);
+      return true;
+    });
+}
+
 leafHistoryRouter.post(
   '/save/:userId',
   requireAuth,
@@ -105,6 +129,8 @@ leafHistoryRouter.post(
     const scientificName = String(req.body.scientificName ?? '').trim();
     const origin = String(req.body.origin ?? '').trim();
     const usage = String(req.body.uses ?? req.body.usage ?? '').trim();
+    const medicinalUses = String(req.body.medicinalUses ?? req.body.medicinal_uses ?? '').trim();
+    const medicalConditions = normalizeMedicalConditionsInput(req.body.medicalConditions ?? req.body.medical_conditions);
     const habitat = String(req.body.habitat ?? '').trim();
     const tags = normalizeTagsInput(req.body.tags);
     const isGrownInCavite = resolveCaviteGrowthFlag({
@@ -129,6 +155,8 @@ leafHistoryRouter.post(
       scientificName,
       origin,
       usage,
+      medicinalUses,
+      medicalConditions,
       habitat,
       isGrownInCavite,
       imageFilename: uploadedImage.filename,
@@ -451,6 +479,8 @@ leafHistoryRouter.get(
         { scientificName: keyword },
         { origin: keyword },
         { usage: keyword },
+        { medicinalUses: keyword },
+        { medicalConditions: keyword },
         { habitat: keyword }
       ];
     }

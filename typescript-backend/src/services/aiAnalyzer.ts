@@ -24,6 +24,8 @@ const STANDARD_NON_PLANT_RESPONSE: LeafAnalysisResponse = {
   scientificName: 'Not a plant',
   origin: 'N/A',
   uses: 'N/A',
+  medicinalUses: 'N/A',
+  medicalConditions: [],
   habitat: 'N/A',
   confidenceScore: 0,
   confidenceLabel: 'Low',
@@ -430,6 +432,41 @@ function normalizeUsesText(value: unknown): string {
   return `• ${single}`;
 }
 
+function normalizeMedicinalUsesText(value: unknown): string {
+  const normalized = normalizeTextBlock(value, '').trim();
+  if (!normalized) {
+    return 'None known.';
+  }
+
+  return normalized;
+}
+
+function normalizeMedicalConditions(value: unknown): string[] {
+  const rawValues: string[] = [];
+
+  if (Array.isArray(value)) {
+    value.forEach((entry) => rawValues.push(String(entry)));
+  } else if (typeof value === 'string') {
+    rawValues.push(...value.split(/[;,\n]/g));
+  }
+
+  const seen = new Set<string>();
+  const blocked = new Set(['none', 'none known', 'n/a', 'not applicable', 'not available', 'unknown']);
+
+  return rawValues
+    .map((entry) => entry.replace(/^[-*\d.\s]+/, '').trim())
+    .filter((entry) => entry.length > 0)
+    .filter((entry) => !blocked.has(entry.toLowerCase()))
+    .filter((entry) => {
+      const lowered = entry.toLowerCase();
+      if (seen.has(lowered)) {
+        return false;
+      }
+      seen.add(lowered);
+      return true;
+    });
+}
+
 function normalizeTags(value: unknown): string[] {
   if (!Array.isArray(value)) {
     throw new Error('AI response missing required field: tags');
@@ -481,6 +518,8 @@ function normalizeAnalysis(value: unknown, references: AnalysisReference[]): Lea
     scientificName: requireTextBlock(candidate.scientificName ?? candidate.scientific_name, 'scientificName'),
     origin: requireTextBlock(candidate.origin, 'origin'),
     uses,
+    medicinalUses: normalizeMedicinalUsesText(candidate.medicinalUses ?? candidate.medicinal_uses),
+    medicalConditions: normalizeMedicalConditions(candidate.medicalConditions ?? candidate.medical_conditions),
     habitat: requireTextBlock(candidate.habitat, 'habitat'),
     confidenceScore,
     confidenceLabel: requireConfidenceLabel(candidate.confidenceLabel ?? candidate.confidence_label),
@@ -509,6 +548,8 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
     '- scientificName: "Not a plant"',
     '- origin: "N/A"',
     '- uses: "N/A"',
+    '- medicinalUses: "N/A"',
+    '- medicalConditions: []',
     '- habitat: "N/A"',
     '- confidenceScore: 0',
     '- confidenceLabel: "Low"',
@@ -523,6 +564,8 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
     '  "commonName": "common name here",',
     '  "origin": "origin information here",',
     '  "uses": "uses and benefits here",',
+    '  "medicinalUses": "medicinal use overview or \\"None known.\\"",',
+    '  "medicalConditions": ["condition 1", "condition 2"],',
     '  "habitat": "where it usually grows with specific location details",',
     '  "confidenceScore": 0-100 integer representing identification confidence,',
     '  "confidenceLabel": "High|Medium|Low",',
@@ -535,10 +578,13 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
     'For "tags", generate 2-5 short category labels that describe this plant\'s primary uses.',
     'Examples: "Medicinal", "Culinary", "Anti-inflammatory", "Immune Booster", "Skin Care",',
     '"Aromatic", "Anti-diabetic", "Ornamental". Use your own judgment based on the plant.',
+    'For "medicinalUses", describe known medicinal relevance in one concise sentence; if unclear, use "None known.".',
+    'For "medicalConditions", provide 0-6 short condition/symptom terms this plant is traditionally associated with (for example: "headache", "cough", "upset stomach").',
+    'If there are no well-known condition associations, return an empty array for "medicalConditions".',
     'For "keyCharacteristics", provide 2-4 concise observations visible in the leaf image.',
     'Keep all text factual, concise, and avoid unsupported medical claims.',
     'Do not add any references/sources/citations field in the JSON.',
-    'Return only valid JSON with these exact 12 fields, nothing else.'
+    'Return only valid JSON with these exact 14 fields, nothing else.'
   ].join('\n');
 
   const imageBase64 = image.toString('base64');

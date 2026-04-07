@@ -104,6 +104,10 @@ leafAnalyzerRouter.post(
       .filter((tag) => tag.length > 0)
       .map((tag) => tag.toLowerCase())
       .filter((tag, index, values) => values.indexOf(tag) === index);
+    const normalizedMedicalConditions = enriched.medicalConditions
+      .map((condition) => condition.trim())
+      .filter((condition) => condition.length > 0)
+      .filter((condition, index, values) => values.findIndex((entry) => entry.toLowerCase() === condition.toLowerCase()) === index);
 
     const uploadedImage = await uploadLeafImageToStorage({
       image: normalizedImage.buffer,
@@ -119,6 +123,8 @@ leafAnalyzerRouter.post(
       scientificName: enriched.scientificName || '',
       origin: enriched.origin || '',
       usage: enriched.uses || '',
+      medicinalUses: enriched.medicinalUses || '',
+      medicalConditions: normalizedMedicalConditions,
       habitat: enriched.habitat || '',
       confidenceScore: enriched.confidenceScore,
       confidenceLabel: enriched.confidenceLabel,

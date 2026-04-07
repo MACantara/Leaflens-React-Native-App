@@ -383,7 +383,7 @@ export default function App(): React.JSX.Element {
 
               <TextInput
                 style={styles.searchBarInput}
-                placeholder="Search..."
+                placeholder="Search plants or conditions..."
                 placeholderTextColor="#b0b5bc"
                 value={globalSearchKeyword}
                 onChangeText={setGlobalSearchKeyword}
@@ -421,8 +421,8 @@ export default function App(): React.JSX.Element {
 
               <Text style={styles.searchScopeDescription}>
                 {globalSearchScope === 'explore'
-                  ? 'Explore mode is active. Refine results with tags below.'
-                  : 'Collection mode is active. Search runs on your saved plants.'}
+                  ? 'Explore mode is active. Search by plant name, medicinal use, or condition (e.g., headache).'
+                  : 'Collection mode is active. Search your saved plants by name, use, or condition.'}
               </Text>
 
               <View style={styles.searchTagGrid}>
