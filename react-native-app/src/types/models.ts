@@ -42,10 +42,12 @@ export interface LeafItem {
   origin: string;
   usage: string;
   habitat: string;
+  isGrownInCavite?: boolean;
   imageFilename?: string;
   imageContentType?: string;
   imageSize?: number;
   tags?: string[];
+  references?: LeafReference[];
 }
 
 export interface LeafCollectionResponse {
