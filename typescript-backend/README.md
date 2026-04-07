@@ -72,7 +72,7 @@ Optional (with defaults):
 - `MONGODB_DB` (default: derived from URL or `leaflens`)
 - `JWT_EXPIRATION` (default: `86400` seconds)
 - `GEMINI_API_KEY` (empty is allowed; analyze endpoints return fallback response)
-- `GEMINI_MODEL` (default: `gemini-3-flash-preview`)
+- `GEMINI_MODEL` (default: `gemma-4-31b-it`)
 - `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE`
 
 ## Railway deployment

@@ -37,7 +37,7 @@ Important: in monorepos, Railway config file path is absolute from repo root.
 | `JWT_SECRET` | Yes | Generate with `openssl rand -hex 32` |
 | `JWT_EXPIRATION` | Optional | Default `86400` |
 | `GEMINI_API_KEY` | Optional | If unset, analyze endpoints use safe fallback response |
-| `GEMINI_MODEL` | Optional | Default `gemini-3-flash-preview` |
+| `GEMINI_MODEL` | Optional | Default `gemma-4-31b-it` |
 | `S3_ENDPOINT` | Optional | Needed for image storage |
 | `S3_REGION` | Optional | Default `auto` |
 | `S3_BUCKET` | Optional | Needed for image storage |

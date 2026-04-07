@@ -47,7 +47,7 @@ export const env = {
     process.env.GEMINI_MODEL ??
     process.env.SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL ??
     process.env.OPENAI_MODEL ??
-    'gemini-3-flash-preview',
+    'gemma-4-31b-it',
   geminiApiKey:
     process.env.GEMINI_API_KEY ??
     process.env.GOOGLE_API_KEY ??

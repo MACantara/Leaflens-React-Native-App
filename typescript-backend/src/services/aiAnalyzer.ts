@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { env } from '../env.js';
 import type { AnalysisReference, LeafAnalysisResponse } from '../types.js';
 
@@ -563,6 +563,9 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
     payload = await ai.models.generateContent({
       model: env.geminiModel,
       config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH
+        },
         tools: [{ googleSearch: {} }]
       },
       contents: requestContents
