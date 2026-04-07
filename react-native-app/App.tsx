@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -132,14 +132,28 @@ export default function App(): React.JSX.Element {
   const [explorePrefillVersion, setExplorePrefillVersion] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
   const lastGestureTimestampRef = useRef(0);
-  const [iconsLoaded] = useFonts({
+  const [iconsLoaded, iconsLoadError] = useFonts({
     ...Feather.font,
     ...Ionicons.font,
     ...MaterialCommunityIcons.font
   });
+  const [fontFallbackReady, setFontFallbackReady] = useState(false);
 
   const welcomeText = session ? session.userName : 'Guest';
   const headerTopPadding = Platform.OS === 'android' ? (NativeStatusBar.currentHeight ?? 0) + 8 : 8;
+
+  useEffect(() => {
+    if (iconsLoaded || iconsLoadError) {
+      setFontFallbackReady(true);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setFontFallbackReady(true);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [iconsLoaded, iconsLoadError]);
 
   function handleLogout(): void {
     setSession(undefined);
@@ -335,9 +349,14 @@ export default function App(): React.JSX.Element {
     onCloseMenu: closeMenuFromGesture
   });
 
-  const appContent = !iconsLoaded ? (
+  const canRenderApp = iconsLoaded || Boolean(iconsLoadError) || fontFallbackReady;
+
+  const appContent = !canRenderApp ? (
     <SafeAreaView style={styles.root}>
       <ExpoStatusBar style="dark" />
+      <View style={styles.startupWrap}>
+        <Text style={styles.startupText}>Loading app...</Text>
+      </View>
     </SafeAreaView>
   ) : !session ? (
     <SafeAreaView style={styles.root}>
@@ -545,6 +564,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1
+  },
+  startupWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  startupText: {
+    color: '#64748b',
+    fontSize: 16,
+    fontWeight: '600'
   },
   bottomNavWrap: {
     backgroundColor: '#f6f6f6',
