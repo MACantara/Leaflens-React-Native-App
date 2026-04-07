@@ -22,7 +22,8 @@ export function analyzeLeaf(imageUri: string): Promise<LeafAnalysisResponse> {
   return apiRequest<LeafAnalysisResponse>('/api/v1/leaf-analyzer/analyze', {
     method: 'POST',
     body,
-    isFormData: true
+    isFormData: true,
+    requestTimeoutMs: 0
   });
 }
 
@@ -32,7 +33,8 @@ export function analyzeAndSaveLeaf(imageUri: string, userId: number, token: stri
     method: 'POST',
     token,
     body,
-    isFormData: true
+    isFormData: true,
+    requestTimeoutMs: 0
   });
 }
 

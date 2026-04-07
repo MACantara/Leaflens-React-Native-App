@@ -17,6 +17,12 @@ export interface LeafAnalysisResponse {
   origin: string;
   uses: string;
   habitat: string;
+  confidenceScore: number;
+  confidenceLabel: string;
+  keyCharacteristics: string[];
+  careTips: string;
+  safetyNotes: string;
+  identificationNotes: string;
   isGrownInCavite: boolean;
   tags: string[];
 }

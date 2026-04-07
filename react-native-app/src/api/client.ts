@@ -21,6 +21,7 @@ const REQUEST_TIMEOUT_MS = 12000;
 type RequestOptions = RequestInit & {
   token?: string;
   isFormData?: boolean;
+  requestTimeoutMs?: number;
 };
 
 function isJsonResponse(contentType: string | null): boolean {
@@ -58,7 +59,7 @@ function extractApiErrorMessage(payload: unknown, status: number): string {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { token, isFormData = false, headers, ...rest } = options;
+  const { token, isFormData = false, requestTimeoutMs = REQUEST_TIMEOUT_MS, headers, ...rest } = options;
 
   const resolvedHeaders: Record<string, string> = {
     Accept: 'application/json',
@@ -74,7 +75,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = requestTimeoutMs > 0 ? setTimeout(() => controller.abort(), requestTimeoutMs) : undefined;
 
   let response: Response;
 
@@ -98,7 +99,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
     throw new ApiError(networkHelp, 0, fetchError);
   } finally {
-    clearTimeout(timeout);
+    if (timeout) {
+      clearTimeout(timeout);
+    }
   }
 
   const payload = await parseResponseBody(response);

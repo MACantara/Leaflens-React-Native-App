@@ -41,6 +41,7 @@ export function PlantDetailsScreen({
   const [updatingVisibilityLeafId, setUpdatingVisibilityLeafId] = useState<number | undefined>();
 
   const selectedLeafTags = useMemo(() => leaf?.tags ?? [], [leaf]);
+  const selectedLeafCharacteristics = useMemo(() => leaf?.keyCharacteristics ?? [], [leaf]);
   const selectedLeafCavite = Boolean(leaf?.isGrownInCavite);
 
   const loadLeaf = useCallback(async (): Promise<void> => {
@@ -159,6 +160,50 @@ export function PlantDetailsScreen({
 
           <Text style={styles.detailSectionTitle}>Habitat</Text>
           <Text style={styles.detailSectionBody}>{leaf.habitat || 'N/A'}</Text>
+
+          {(leaf.confidenceLabel || leaf.confidenceScore !== undefined) && (
+            <>
+              <Text style={styles.detailSectionTitle}>AI Confidence</Text>
+              <Text style={styles.detailSectionBody}>
+                {leaf.confidenceLabel || 'Unknown'}
+                {typeof leaf.confidenceScore === 'number' ? ` (${leaf.confidenceScore}%)` : ''}
+              </Text>
+            </>
+          )}
+
+          {selectedLeafCharacteristics.length > 0 && (
+            <>
+              <Text style={styles.detailSectionTitle}>Key Characteristics</Text>
+              <View style={styles.tagWrap}>
+                {selectedLeafCharacteristics.map((feature) => (
+                  <View key={feature} style={styles.tagPill}>
+                    <Text style={styles.tagText}>{feature}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+
+          {leaf.careTips && leaf.careTips.trim().length > 0 && (
+            <>
+              <Text style={styles.detailSectionTitle}>Care Tips</Text>
+              <Text style={styles.detailSectionBody}>{leaf.careTips}</Text>
+            </>
+          )}
+
+          {leaf.safetyNotes && leaf.safetyNotes.trim().length > 0 && (
+            <>
+              <Text style={styles.detailSectionTitle}>Safety Notes</Text>
+              <Text style={styles.warningText}>{leaf.safetyNotes}</Text>
+            </>
+          )}
+
+          {leaf.identificationNotes && leaf.identificationNotes.trim().length > 0 && (
+            <>
+              <Text style={styles.detailSectionTitle}>Identification Notes</Text>
+              <Text style={styles.detailSectionBody}>{leaf.identificationNotes}</Text>
+            </>
+          )}
 
           <Text style={styles.detailSectionTitle}>Tags</Text>
           {selectedLeafTags.length > 0 ? (
@@ -297,6 +342,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#374151'
+  },
+  warningText: {
+    color: '#7c2d12',
+    backgroundColor: '#ffedd5',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+    lineHeight: 20
   },
   tagWrap: {
     flexDirection: 'row',

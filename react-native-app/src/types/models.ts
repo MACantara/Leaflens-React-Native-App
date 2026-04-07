@@ -19,6 +19,12 @@ export interface LeafAnalysisResponse {
   origin: string;
   uses: string;
   habitat: string;
+  confidenceScore: number;
+  confidenceLabel: string;
+  keyCharacteristics: string[];
+  careTips: string;
+  safetyNotes: string;
+  identificationNotes: string;
   isGrownInCavite: boolean;
   tags: string[];
 }
@@ -40,6 +46,12 @@ export interface LeafItem {
   origin: string;
   usage: string;
   habitat: string;
+  confidenceScore?: number;
+  confidenceLabel?: string;
+  keyCharacteristics?: string[];
+  careTips?: string;
+  safetyNotes?: string;
+  identificationNotes?: string;
   isGrownInCavite?: boolean;
   imageFilename?: string;
   imageContentType?: string;

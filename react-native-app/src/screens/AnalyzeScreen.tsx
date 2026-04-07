@@ -29,12 +29,34 @@ function renderResult(
   onExploreTag?: (tag: string) => void
 ): React.JSX.Element {
   const hasTags = result.tags.length > 0;
+  const hasKeyCharacteristics = result.keyCharacteristics.length > 0;
+
+  const confidenceColor =
+    result.confidenceLabel.toLowerCase() === 'high'
+      ? '#166534'
+      : result.confidenceLabel.toLowerCase() === 'medium'
+        ? '#854d0e'
+        : '#991b1b';
+
+  const confidenceBg =
+    result.confidenceLabel.toLowerCase() === 'high'
+      ? '#dcfce7'
+      : result.confidenceLabel.toLowerCase() === 'medium'
+        ? '#fef9c3'
+        : '#fee2e2';
 
   return (
     <View style={styles.resultCard}>
       <Image source={{ uri: imageUri }} style={[styles.resultImage, { height: resultImageHeight }]} />
       <Text style={styles.resultTitle}>{result.commonName || 'N/A'}</Text>
       <Text style={styles.resultScientific}>{result.scientificName || 'N/A'}</Text>
+
+      <View style={styles.metaRow}>
+        <View style={[styles.confidenceBadge, { backgroundColor: confidenceBg }]}> 
+          <Text style={[styles.confidenceBadgeText, { color: confidenceColor }]}>AI Confidence: {result.confidenceLabel}</Text>
+        </View>
+        <Text style={styles.confidenceScore}>{result.confidenceScore}%</Text>
+      </View>
 
       <Text style={styles.sectionTitle}>Origin</Text>
       <Text style={styles.sectionBody}>{result.origin || 'N/A'}</Text>
@@ -44,6 +66,30 @@ function renderResult(
 
       <Text style={styles.sectionTitle}>Habitat</Text>
       <Text style={styles.sectionBody}>{result.habitat || 'N/A'}</Text>
+
+      <Text style={styles.sectionTitle}>Key Characteristics</Text>
+      {hasKeyCharacteristics ? (
+        <View style={styles.characteristicsWrap}>
+          {result.keyCharacteristics.map((feature) => (
+            <View key={feature} style={styles.characteristicsPill}>
+              <Text style={styles.characteristicsText}>{feature}</Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.sectionBody}>N/A</Text>
+      )}
+
+      <Text style={styles.sectionTitle}>Care Tips</Text>
+      <Text style={styles.sectionBody}>{result.careTips || 'N/A'}</Text>
+
+      <Text style={styles.sectionTitle}>Safety Notes</Text>
+      <Text style={styles.warningText}>{result.safetyNotes || 'N/A'}</Text>
+
+      <Text style={styles.sectionTitle}>Identification Notes</Text>
+      <Text style={styles.sectionBody}>{result.identificationNotes || 'N/A'}</Text>
+
+      <Text style={styles.disclaimerText}>AI-generated guidance may be imperfect. Confirm critical details with trusted references.</Text>
 
       <Text style={styles.sectionTitle}>Tags</Text>
       {hasTags ? (
@@ -297,6 +343,26 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     fontSize: 16
   },
+  metaRow: {
+    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  confidenceBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6
+  },
+  confidenceBadgeText: {
+    fontSize: 12,
+    fontWeight: '800'
+  },
+  confidenceScore: {
+    fontSize: 14,
+    color: '#334155',
+    fontWeight: '700'
+  },
   caviteBadge: {
     marginTop: 2,
     color: '#14532d',
@@ -318,6 +384,38 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 15,
     lineHeight: 22
+  },
+  characteristicsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8
+  },
+  characteristicsPill: {
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  characteristicsText: {
+    color: '#1e293b',
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  warningText: {
+    color: '#7c2d12',
+    backgroundColor: '#ffedd5',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+    lineHeight: 20
+  },
+  disclaimerText: {
+    color: '#6b7280',
+    fontSize: 12,
+    lineHeight: 18
   },
   tagWrap: {
     flexDirection: 'row',

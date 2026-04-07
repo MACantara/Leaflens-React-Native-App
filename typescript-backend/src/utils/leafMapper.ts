@@ -8,6 +8,12 @@ export interface LeafDto {
   origin: string;
   usage: string;
   habitat: string;
+  confidenceScore?: number;
+  confidenceLabel?: string;
+  keyCharacteristics?: string[];
+  careTips?: string;
+  safetyNotes?: string;
+  identificationNotes?: string;
   isGrownInCavite: boolean;
   imageFilename?: string;
   imageContentType?: string;
@@ -30,6 +36,12 @@ export function toLeafDto(leaf: LeafDoc): LeafDto {
     origin: leaf.origin,
     usage: leaf.usage,
     habitat: leaf.habitat,
+    confidenceScore: leaf.confidenceScore,
+    confidenceLabel: leaf.confidenceLabel,
+    keyCharacteristics: leaf.keyCharacteristics,
+    careTips: leaf.careTips,
+    safetyNotes: leaf.safetyNotes,
+    identificationNotes: leaf.identificationNotes,
     isGrownInCavite: Boolean(leaf.isGrownInCavite),
     imageFilename: leaf.imageFilename,
     imageContentType: leaf.imageContentType,

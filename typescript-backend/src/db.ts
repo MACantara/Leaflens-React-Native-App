@@ -24,6 +24,12 @@ export interface LeafDoc {
   origin: string;
   usage: string;
   habitat: string;
+  confidenceScore?: number;
+  confidenceLabel?: string;
+  keyCharacteristics?: string[];
+  careTips?: string;
+  safetyNotes?: string;
+  identificationNotes?: string;
   isGrownInCavite?: boolean;
   imageData?: Buffer;
   imageFilename: string;

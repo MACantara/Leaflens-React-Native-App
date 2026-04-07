@@ -75,6 +75,50 @@ function requireTextBlock(value: unknown, fieldName: string): string {
   return text;
 }
 
+function requireConfidenceScore(value: unknown): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    throw new Error('AI response missing required field: confidenceScore');
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numeric)));
+}
+
+function requireConfidenceLabel(value: unknown): string {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'high' || normalized === 'medium' || normalized === 'low') {
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  throw new Error('AI response missing required field: confidenceLabel');
+}
+
+function requireStringList(value: unknown, fieldName: string): string[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`AI response missing required field: ${fieldName}`);
+  }
+
+  const unique = new Set<string>();
+  const items = value
+    .map((entry) => String(entry).trim())
+    .filter((entry) => entry.length > 0)
+    .filter((entry) => {
+      const lowered = entry.toLowerCase();
+      if (unique.has(lowered)) {
+        return false;
+      }
+      unique.add(lowered);
+      return true;
+    });
+
+  if (items.length === 0) {
+    throw new Error(`AI response missing required field: ${fieldName}`);
+  }
+
+  return items;
+}
+
 function normalizeUsesText(value: unknown): string {
   if (Array.isArray(value)) {
     const bullets = value
@@ -115,12 +159,12 @@ function normalizeUsesText(value: unknown): string {
 
 function normalizeTags(value: unknown): string[] {
   if (!Array.isArray(value)) {
-    return [];
+    throw new Error('AI response missing required field: tags');
   }
 
   const seen = new Set<string>();
 
-  return value
+  const tags = value
     .map((tag) => String(tag).trim())
     .filter((tag) => tag.length > 0)
     .filter((tag) => {
@@ -131,6 +175,12 @@ function normalizeTags(value: unknown): string[] {
       seen.add(lowered);
       return true;
     });
+
+  if (tags.length === 0) {
+    throw new Error('AI response missing required field: tags');
+  }
+
+  return tags;
 }
 
 function normalizeAnalysis(value: unknown): LeafAnalysisResponse {
@@ -143,6 +193,7 @@ function normalizeAnalysis(value: unknown): LeafAnalysisResponse {
   if (!uses || uses === 'N/A') {
     throw new Error('AI response missing required field: uses');
   }
+  const confidenceScore = requireConfidenceScore(candidate.confidenceScore ?? candidate.confidence_score);
 
   return {
     commonName: requireTextBlock(candidate.commonName ?? candidate.common_name, 'commonName'),
@@ -150,6 +201,12 @@ function normalizeAnalysis(value: unknown): LeafAnalysisResponse {
     origin: requireTextBlock(candidate.origin, 'origin'),
     uses,
     habitat: requireTextBlock(candidate.habitat, 'habitat'),
+    confidenceScore,
+    confidenceLabel: requireConfidenceLabel(candidate.confidenceLabel ?? candidate.confidence_label),
+    keyCharacteristics: requireStringList(candidate.keyCharacteristics ?? candidate.key_characteristics, 'keyCharacteristics'),
+    careTips: requireTextBlock(candidate.careTips ?? candidate.care_tips, 'careTips'),
+    safetyNotes: requireTextBlock(candidate.safetyNotes ?? candidate.safety_notes, 'safetyNotes'),
+    identificationNotes: requireTextBlock(candidate.identificationNotes ?? candidate.identification_notes, 'identificationNotes'),
     isGrownInCavite: toBoolean(candidate.isGrownInCavite ?? candidate.is_grown_in_cavite),
     tags: normalizeTags(candidate.tags)
   };
@@ -172,12 +229,20 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
     '  "origin": "origin information here",',
     '  "uses": "uses and benefits here",',
     '  "habitat": "where it usually grows with specific location details",',
+    '  "confidenceScore": 0-100 integer representing identification confidence,',
+    '  "confidenceLabel": "High|Medium|Low",',
+    '  "keyCharacteristics": ["short visual feature 1", "short visual feature 2"],',
+    '  "careTips": "2-3 practical tips for growing or handling",',
+    '  "safetyNotes": "important caution for consumption/handling",',
+    '  "identificationNotes": "brief explanation of why this species was selected and what to verify manually",',
     '  "tags": ["Tag1", "Tag2", "Tag3"]',
     '}',
     'For "tags", generate 2-5 short category labels that describe this plant\'s primary uses.',
     'Examples: "Medicinal", "Culinary", "Anti-inflammatory", "Immune Booster", "Skin Care",',
     '"Aromatic", "Anti-diabetic", "Ornamental". Use your own judgment based on the plant.',
-    'Return only valid JSON with these exact 6 fields, nothing else.'
+    'For "keyCharacteristics", provide 2-4 concise observations visible in the leaf image.',
+    'Keep all text factual, concise, and avoid unsupported medical claims.',
+    'Return only valid JSON with these exact 12 fields, nothing else.'
   ].join('\n');
 
   const imageBase64 = image.toString('base64');
