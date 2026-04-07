@@ -135,6 +135,7 @@ leafAnalyzerRouter.post(
       imageStorageBucket: uploadedImage.bucket,
       isImagePublic: false,
       tags: normalizedTags,
+      references: enriched.references,
       createdAt: now,
       updatedAt: now
     };

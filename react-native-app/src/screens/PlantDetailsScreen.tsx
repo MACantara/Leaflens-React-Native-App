@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { deleteLeaf, getLeafImageSource, getUserHistory, updateLeafImageVisibility } from '../api/leaves';
 import { ApiError } from '../api/client';
@@ -23,6 +23,19 @@ function toErrorText(error: unknown): string {
     return error.message;
   }
   return 'Unexpected error.';
+}
+
+function getReferenceLabel(uri: string, domain?: string): string {
+  const normalizedDomain = String(domain ?? '').trim();
+  if (normalizedDomain) {
+    return normalizedDomain;
+  }
+
+  try {
+    return new URL(uri).hostname;
+  } catch {
+    return 'Open source';
+  }
 }
 
 export function PlantDetailsScreen({
@@ -218,6 +231,20 @@ export function PlantDetailsScreen({
             <Text style={styles.detailSectionBody}>N/A</Text>
           )}
 
+          <Text style={styles.detailSectionTitle}>References</Text>
+          {Array.isArray(leaf.references) && leaf.references.length > 0 ? (
+            <View style={styles.referenceWrap}>
+              {leaf.references.map((reference) => (
+                <Pressable key={reference.uri} style={styles.referencePill} onPress={() => void Linking.openURL(reference.uri)}>
+                  <Text style={styles.referenceTitle}>{reference.title}</Text>
+                  <Text style={styles.referenceLink}>{getReferenceLabel(reference.uri, reference.domain)}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.detailSectionBody}>N/A</Text>
+          )}
+
           {leaf.ownerUserId === session.userId && (
             <>
               <Text style={styles.detailSectionTitle}>Image visibility</Text>
@@ -367,6 +394,27 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     fontSize: 12,
     fontWeight: '600'
+  },
+  referenceWrap: {
+    gap: 8
+  },
+  referencePill: {
+    backgroundColor: '#f8fafc',
+    borderColor: '#dbeafe',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8
+  },
+  referenceTitle: {
+    color: '#0f172a',
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  referenceLink: {
+    color: '#1d4ed8',
+    fontSize: 12,
+    marginTop: 2
   },
   visibilityButton: {
     marginTop: 2,

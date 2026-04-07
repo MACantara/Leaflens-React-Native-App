@@ -1,4 +1,5 @@
 import type { LeafDoc } from '../db.js';
+import type { AnalysisReference } from '../types.js';
 
 export interface LeafDto {
   leafId: number;
@@ -20,6 +21,7 @@ export interface LeafDto {
   imageSize?: number;
   isImagePublic: boolean;
   tags?: string[];
+  references?: AnalysisReference[];
 }
 
 export function toLeafDto(leaf: LeafDoc): LeafDto {
@@ -47,6 +49,7 @@ export function toLeafDto(leaf: LeafDoc): LeafDto {
     imageContentType: leaf.imageContentType,
     imageSize: leaf.imageSize,
     isImagePublic: Boolean(leaf.isImagePublic),
-    tags: leaf.tags
+    tags: leaf.tags,
+    references: leaf.references ?? []
   };
 }

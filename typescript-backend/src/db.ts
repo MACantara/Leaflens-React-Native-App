@@ -1,5 +1,6 @@
 import { Db, MongoClient } from 'mongodb';
 import { env } from './env.js';
+import type { AnalysisReference } from './types.js';
 
 export interface CounterDoc {
   _id: string;
@@ -41,6 +42,7 @@ export interface LeafDoc {
   imageStorageEndpoint?: string;
   isImagePublic?: boolean;
   tags: string[];
+  references?: AnalysisReference[];
   createdAt: Date;
   updatedAt: Date;
 }

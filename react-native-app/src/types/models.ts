@@ -13,6 +13,12 @@ export interface AuthResponse {
   message: string;
 }
 
+export interface AnalysisReference {
+  title: string;
+  uri: string;
+  domain?: string;
+}
+
 export interface LeafAnalysisResponse {
   commonName: string;
   scientificName: string;
@@ -27,6 +33,7 @@ export interface LeafAnalysisResponse {
   identificationNotes: string;
   isGrownInCavite: boolean;
   tags: string[];
+  references: AnalysisReference[];
 }
 
 export interface AnalyzeAndSaveResponse {
@@ -58,6 +65,7 @@ export interface LeafItem {
   imageSize?: number;
   isImagePublic?: boolean;
   tags?: string[];
+  references?: AnalysisReference[];
 }
 
 export interface LeafImageVisibilityResponse {
