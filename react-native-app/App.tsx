@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Platform, Pressable, SafeAreaView, ScrollView, StatusBar as NativeStatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
@@ -36,6 +36,49 @@ const menuItems: MenuItem[] = [
 ];
 
 const GESTURE_COOLDOWN_MS = 700;
+const HASH_TAG_PATTERN = /(^|\s)#([a-z0-9][a-z0-9-_]*)/gi;
+
+function normalizeTagValue(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function mergeAndNormalizeTags(values: string[]): string[] {
+  const seen = new Set<string>();
+
+  return values
+    .map((value) => normalizeTagValue(value))
+    .filter((value) => value.length > 0)
+    .filter((value) => {
+      if (seen.has(value)) {
+        return false;
+      }
+
+      seen.add(value);
+      return true;
+    });
+}
+
+function parseKeywordAndTagTokens(keywordInput: string, selectedTags: string[]): { keyword: string; tags: string[] } {
+  const extractedTags = new Set<string>();
+  let match: RegExpExecArray | null = HASH_TAG_PATTERN.exec(keywordInput);
+
+  while (match) {
+    extractedTags.add(normalizeTagValue(match[2]));
+    match = HASH_TAG_PATTERN.exec(keywordInput);
+  }
+
+  HASH_TAG_PATTERN.lastIndex = 0;
+
+  const cleanedKeyword = keywordInput
+    .replace(HASH_TAG_PATTERN, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return {
+    keyword: cleanedKeyword,
+    tags: mergeAndNormalizeTags([...selectedTags, ...Array.from(extractedTags)])
+  };
+}
 
 function renderActiveTab(
   tab: AppTab,
@@ -215,7 +258,7 @@ export default function App(): React.JSX.Element {
     try {
       if (scope === 'collection') {
         const tags = await getUserTags(session.userId, session.token);
-        setGlobalSearchAvailableTags(tags);
+        setGlobalSearchAvailableTags(mergeAndNormalizeTags(tags));
         return;
       }
 
@@ -235,8 +278,7 @@ export default function App(): React.JSX.Element {
 
       const sortedTags = [...countByTag.entries()]
         .sort((a, b) => b[1] - a[1])
-        .map(([tag]) => tag)
-        .slice(0, 12);
+        .map(([tag]) => tag);
 
       setGlobalSearchAvailableTags(sortedTags);
     } catch (error) {
@@ -254,7 +296,7 @@ export default function App(): React.JSX.Element {
 
     setGlobalSearchScope(nextScope);
     setGlobalSearchKeyword(nextScope === 'explore' ? exploreSearchKeyword : collectionSearchKeyword);
-    setGlobalSearchSelectedTags(nextScope === 'explore' ? exploreSearchTags : collectionSearchTags);
+    setGlobalSearchSelectedTags(mergeAndNormalizeTags(nextScope === 'explore' ? exploreSearchTags : collectionSearchTags));
     setGlobalSearchVisible(true);
     void loadGlobalTags(nextScope);
   }
@@ -264,7 +306,7 @@ export default function App(): React.JSX.Element {
       const nextScope: GlobalSearchScope = current === 'explore' ? 'collection' : 'explore';
 
       setGlobalSearchKeyword(nextScope === 'explore' ? exploreSearchKeyword : collectionSearchKeyword);
-      setGlobalSearchSelectedTags(nextScope === 'explore' ? exploreSearchTags : collectionSearchTags);
+      setGlobalSearchSelectedTags(mergeAndNormalizeTags(nextScope === 'explore' ? exploreSearchTags : collectionSearchTags));
       void loadGlobalTags(nextScope);
 
       return nextScope;
@@ -272,12 +314,17 @@ export default function App(): React.JSX.Element {
   }
 
   function toggleGlobalTag(tag: string): void {
+    const normalizedTag = normalizeTagValue(tag);
+    if (!normalizedTag) {
+      return;
+    }
+
     setGlobalSearchSelectedTags((current) => {
-      if (current.includes(tag)) {
-        return current.filter((entry) => entry !== tag);
+      if (current.includes(normalizedTag)) {
+        return current.filter((entry) => entry !== normalizedTag);
       }
 
-      return [...current, tag];
+      return [...current, normalizedTag];
     });
   }
 
@@ -291,8 +338,11 @@ export default function App(): React.JSX.Element {
   }
 
   function openCollectionSearch(): void {
-    const nextKeyword = globalSearchKeyword.trim();
-    const nextTags = [...globalSearchSelectedTags];
+    const parsed = parseKeywordAndTagTokens(globalSearchKeyword, globalSearchSelectedTags);
+    const nextKeyword = parsed.keyword;
+    const nextTags = parsed.tags;
+    setGlobalSearchKeyword(nextKeyword);
+    setGlobalSearchSelectedTags(nextTags);
     setCollectionSearchKeyword(nextKeyword);
     setCollectionSearchTags(nextTags);
     setCollectionSearchVersion((value) => value + 1);
@@ -302,8 +352,11 @@ export default function App(): React.JSX.Element {
   }
 
   function openPublicExploreSearch(): void {
-    const nextKeyword = globalSearchKeyword.trim();
-    const nextTags = [...globalSearchSelectedTags];
+    const parsed = parseKeywordAndTagTokens(globalSearchKeyword, globalSearchSelectedTags);
+    const nextKeyword = parsed.keyword;
+    const nextTags = parsed.tags;
+    setGlobalSearchKeyword(nextKeyword);
+    setGlobalSearchSelectedTags(nextTags);
     setExploreSearchKeyword(nextKeyword);
     setExploreSearchTags(nextTags);
     setExploreSearchVersion((value) => value + 1);
@@ -427,27 +480,53 @@ export default function App(): React.JSX.Element {
                   : 'Collection mode is active. Search your saved plants by name, use, or condition.'}
               </Text>
 
-              <View style={styles.searchTagGrid}>
-                {globalSearchTagsLoading ? (
-                  <Text style={styles.searchTagHelperText}>Loading filters...</Text>
-                ) : globalSearchAvailableTags.length > 0 ? (
-                  globalSearchAvailableTags.map((tag) => {
-                    const selected = globalSearchSelectedTags.includes(tag);
+              <Text style={styles.searchTagInstruction}>Tip: Type #tag in search or tap tags below.</Text>
 
-                    return (
+              {globalSearchSelectedTags.length > 0 && (
+                <View style={styles.searchSelectedTagWrap}>
+                  <Text style={styles.searchSelectedTagTitle}>Selected tags</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.searchSelectedTagRow}>
+                    {globalSearchSelectedTags.map((tag) => (
                       <Pressable
-                        key={tag}
-                        style={[styles.searchTagPill, selected && styles.searchTagPillActive]}
+                        key={`selected-${tag}`}
+                        style={styles.searchSelectedTagPill}
                         onPress={() => toggleGlobalTag(tag)}
                       >
-                        <Text style={[styles.searchTagPillText, selected && styles.searchTagPillTextActive]}>{tag}</Text>
+                        <Text style={styles.searchSelectedTagPillText}>#{tag}</Text>
                       </Pressable>
-                    );
-                  })
-                ) : (
-                  <Text style={styles.searchTagHelperText}>No filters available.</Text>
-                )}
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              <View style={styles.searchTagSectionHeaderRow}>
+                <Text style={styles.searchTagSectionTitle}>Available tags</Text>
+                <Text style={styles.searchTagSectionMeta}>{globalSearchAvailableTags.length}</Text>
               </View>
+
+              <ScrollView style={styles.searchTagScrollArea} nestedScrollEnabled showsVerticalScrollIndicator>
+                <View style={styles.searchTagGrid}>
+                  {globalSearchTagsLoading ? (
+                    <Text style={styles.searchTagHelperText}>Loading filters...</Text>
+                  ) : globalSearchAvailableTags.length > 0 ? (
+                    globalSearchAvailableTags.map((tag) => {
+                      const selected = globalSearchSelectedTags.includes(tag);
+
+                      return (
+                        <Pressable
+                          key={tag}
+                          style={[styles.searchTagPill, selected && styles.searchTagPillActive]}
+                          onPress={() => toggleGlobalTag(tag)}
+                        >
+                          <Text style={[styles.searchTagPillText, selected && styles.searchTagPillTextActive]}>#{tag}</Text>
+                        </Pressable>
+                      );
+                    })
+                  ) : (
+                    <Text style={styles.searchTagHelperText}>No filters available.</Text>
+                  )}
+                </View>
+              </ScrollView>
 
               {globalSearchTagsError.length > 0 && <Text style={styles.searchTagErrorText}>{globalSearchTagsError}</Text>}
             </View>
@@ -730,10 +809,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24
   },
+  searchTagInstruction: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '600'
+  },
+  searchSelectedTagWrap: {
+    gap: 8
+  },
+  searchSelectedTagTitle: {
+    color: '#14532d',
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  searchSelectedTagRow: {
+    gap: 8,
+    paddingRight: 8
+  },
+  searchSelectedTagPill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#dcfce7',
+    borderWidth: 1,
+    borderColor: '#86efac'
+  },
+  searchSelectedTagPillText: {
+    color: '#14532d',
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  searchTagSectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  searchTagSectionTitle: {
+    color: '#1f2937',
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  searchTagSectionMeta: {
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  searchTagScrollArea: {
+    maxHeight: 210,
+    minHeight: 70
+  },
   searchTagGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10
+    gap: 10,
+    paddingBottom: 8
   },
   searchTagPill: {
     borderRadius: 15,
