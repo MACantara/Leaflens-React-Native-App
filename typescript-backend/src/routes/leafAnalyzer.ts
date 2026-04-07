@@ -22,41 +22,27 @@ leafAnalyzerRouter.post(
   '/analyze',
   upload.single('image'),
   asyncHandler(async (req, res) => {
-    try {
-      if (!req.file) {
-        res.status(400).json({ error: 'Image file is required' });
-        return;
-      }
-
-      const normalizedImage = await normalizeImageBufferTo1080p({
-        image: req.file.buffer,
-        contentType: req.file.mimetype || 'image/jpeg',
-        filename: req.file.originalname || 'leaf-image.jpg'
-      });
-
-      const analysis = await analyzeLeafImage(normalizedImage.buffer, normalizedImage.contentType);
-      const enriched = {
-        ...analysis,
-        isGrownInCavite: resolveCaviteGrowthFlag({
-          commonName: analysis.commonName,
-          scientificName: analysis.scientificName,
-          modelValue: analysis.isGrownInCavite
-        })
-      };
-
-      res.json(enriched);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      res.status(500).json({
-        commonName: 'Error',
-        scientificName: 'Error processing image',
-        origin: `Error: ${message}`,
-        uses: 'N/A',
-        habitat: 'N/A',
-        isGrownInCavite: false,
-        tags: []
-      });
+    if (!req.file) {
+      throw new HttpError(400, 'Image file is required');
     }
+
+    const normalizedImage = await normalizeImageBufferTo1080p({
+      image: req.file.buffer,
+      contentType: req.file.mimetype || 'image/jpeg',
+      filename: req.file.originalname || 'leaf-image.jpg'
+    });
+
+    const analysis = await analyzeLeafImage(normalizedImage.buffer, normalizedImage.contentType);
+    const enriched = {
+      ...analysis,
+      isGrownInCavite: resolveCaviteGrowthFlag({
+        commonName: analysis.commonName,
+        scientificName: analysis.scientificName,
+        modelValue: analysis.isGrownInCavite
+      })
+    };
+
+    res.json(enriched);
   })
 );
 

@@ -2,20 +2,6 @@ import { GoogleGenAI } from '@google/genai';
 import { env } from '../env.js';
 import type { LeafAnalysisResponse } from '../types.js';
 
-const REQUEST_TIMEOUT_MS = 25000;
-
-function defaultAnalysis(): LeafAnalysisResponse {
-  return {
-    commonName: 'Unknown leaf',
-    scientificName: 'Unknown species',
-    origin: 'Unknown',
-    uses: 'N/A',
-    habitat: 'N/A',
-    isGrownInCavite: false,
-    tags: []
-  };
-}
-
 function extractTextContent(content: unknown): string {
   if (typeof content === 'string') {
     return content;
@@ -80,6 +66,15 @@ function normalizeTextBlock(value: unknown, fallback: string): string {
   return text || fallback;
 }
 
+function requireTextBlock(value: unknown, fieldName: string): string {
+  const text = normalizeTextBlock(value, '').trim();
+  if (!text) {
+    throw new Error(`AI response missing required field: ${fieldName}`);
+  }
+
+  return text;
+}
+
 function normalizeUsesText(value: unknown): string {
   if (Array.isArray(value)) {
     const bullets = value
@@ -140,41 +135,29 @@ function normalizeTags(value: unknown): string[] {
 
 function normalizeAnalysis(value: unknown): LeafAnalysisResponse {
   if (!value || typeof value !== 'object') {
-    return defaultAnalysis();
+    throw new Error('AI response is not a valid JSON object.');
   }
 
   const candidate = value as Record<string, unknown>;
+  const uses = normalizeUsesText(candidate.uses ?? candidate.usage);
+  if (!uses || uses === 'N/A') {
+    throw new Error('AI response missing required field: uses');
+  }
 
   return {
-    commonName: normalizeTextBlock(candidate.commonName ?? candidate.common_name, 'Unknown leaf'),
-    scientificName: normalizeTextBlock(candidate.scientificName ?? candidate.scientific_name, 'Unknown species'),
-    origin: normalizeTextBlock(candidate.origin, 'Unknown'),
-    uses: normalizeUsesText(candidate.uses ?? candidate.usage),
-    habitat: normalizeTextBlock(candidate.habitat, 'N/A'),
+    commonName: requireTextBlock(candidate.commonName ?? candidate.common_name, 'commonName'),
+    scientificName: requireTextBlock(candidate.scientificName ?? candidate.scientific_name, 'scientificName'),
+    origin: requireTextBlock(candidate.origin, 'origin'),
+    uses,
+    habitat: requireTextBlock(candidate.habitat, 'habitat'),
     isGrownInCavite: toBoolean(candidate.isGrownInCavite ?? candidate.is_grown_in_cavite),
     tags: normalizeTags(candidate.tags)
   };
 }
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  return await new Promise<T>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs}ms`)), timeoutMs);
-
-    promise
-      .then((value) => {
-        clearTimeout(timeout);
-        resolve(value);
-      })
-      .catch((error: unknown) => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-  });
-}
-
 export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise<LeafAnalysisResponse> {
   if (!env.geminiApiKey || !env.geminiModel) {
-    return defaultAnalysis();
+    throw new Error('AI service is not configured. Missing GEMINI_API_KEY or GEMINI_MODEL.');
   }
 
   const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
@@ -199,38 +182,39 @@ export async function analyzeLeafImage(image: Buffer, mimeType: string): Promise
 
   const imageBase64 = image.toString('base64');
 
-  try {
-    const payload = await withTimeout(
-      ai.models.generateContent({
-        model: env.geminiModel,
-        contents: [
+  const payload = await ai.models.generateContent({
+    model: env.geminiModel,
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
           {
-            role: 'user',
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType,
-                  data: imageBase64
-                }
-              }
-            ]
+            inlineData: {
+              mimeType,
+              data: imageBase64
+            }
           }
         ]
-      }),
-      REQUEST_TIMEOUT_MS
-    );
+      }
+    ]
+  });
 
-    const textFromPayload = typeof payload.text === 'string' ? payload.text : '';
-    const content = textFromPayload || extractTextContent((payload as { candidates?: unknown[] }).candidates ?? []);
-    if (!content) {
-      return defaultAnalysis();
-    }
-
-    const jsonText = extractJson(content);
-    const parsed = JSON.parse(jsonText) as unknown;
-    return normalizeAnalysis(parsed);
-  } catch {
-    return defaultAnalysis();
+  const textFromPayload = typeof payload.text === 'string' ? payload.text : '';
+  const content = textFromPayload || extractTextContent((payload as { candidates?: unknown[] }).candidates ?? []);
+  if (!content) {
+    throw new Error('AI service returned empty content.');
   }
+
+  const jsonText = extractJson(content);
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText) as unknown;
+  } catch (error) {
+    const parseMessage = error instanceof Error ? error.message : 'Unknown parse error';
+    throw new Error(`AI response JSON parsing failed: ${parseMessage}`);
+  }
+
+  return normalizeAnalysis(parsed);
 }

@@ -35,6 +35,28 @@ async function parseResponseBody(response: Response): Promise<unknown> {
   return response.text();
 }
 
+function extractApiErrorMessage(payload: unknown, status: number): string {
+  if (typeof payload === 'string' && payload.trim().length > 0) {
+    return payload;
+  }
+
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    const error = typeof record.error === 'string' ? record.error.trim() : '';
+    const message = typeof record.message === 'string' ? record.message.trim() : '';
+
+    if (error) {
+      return error;
+    }
+
+    if (message) {
+      return message;
+    }
+  }
+
+  return `Request failed with status ${status}`;
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, isFormData = false, headers, ...rest } = options;
 
@@ -82,8 +104,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const payload = await parseResponseBody(response);
 
   if (!response.ok) {
-    const fallbackMessage = typeof payload === 'string' ? payload : `Request failed with status ${response.status}`;
-    throw new ApiError(fallbackMessage, response.status, payload);
+    throw new ApiError(extractApiErrorMessage(payload, response.status), response.status, payload);
   }
 
   return payload as T;
