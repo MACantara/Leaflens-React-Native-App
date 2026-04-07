@@ -36,10 +36,6 @@ Fallback behavior if EXPO_PUBLIC_API_BASE_URL is missing:
 - Development mode: falls back to http://localhost:8080
 - Release APK: falls back to https://leaflens-backend.up.railway.app
 
-For in-app update checks, also set:
-- EXPO_PUBLIC_GITHUB_OWNER=<github-owner>
-- EXPO_PUBLIC_GITHUB_REPO=<github-repo-name-or-url>
-
 Examples:
 - Android emulator: http://10.0.2.2:8080
 - iOS simulator: http://localhost:8080
@@ -144,14 +140,3 @@ git push origin v1.0.1
 - leaflens-<version>.apk
 - leaflens-<version>.apk.sha256
 
-## In-app update behavior (Android)
-In About Us, use CHECK UPDATES to query the repository's latest GitHub Release.
-
-If a newer APK is found:
-1. Tap INSTALL UPDATE.
-2. The app downloads the APK.
-3. Android installer opens to complete install.
-
-App data is preserved across upgrades when:
-- package id stays the same (`com.leaflens.mobile`), and
-- builds are signed with a consistent signing key.
