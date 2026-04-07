@@ -6,6 +6,7 @@ import { useFonts } from 'expo-font';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { AnalyzeScreen } from './src/screens/AnalyzeScreen';
 import { CollectionScreen } from './src/screens/CollectionScreen';
+import { PlantDetailsScreen } from './src/screens/PlantDetailsScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { AboutScreen } from './src/screens/AboutScreen';
@@ -42,20 +43,27 @@ function renderActiveTab(
   onAccountDeleted: () => void,
   onExploreTag: (tag: string) => void,
   onOpenLeafDetails: (leafId: number) => void,
-  collectionPrefillLeafId?: number,
-  collectionPrefillVersion?: number,
+  onCloseLeafDetails: () => void,
+  selectedLeafId?: number,
+  selectedLeafVersion?: number,
   explorePrefillTag?: string,
   explorePrefillVersion?: number
 ): React.JSX.Element {
   if (tab === 'home') {
-    return (
-      <CollectionScreen
-        session={session}
-        onExploreTag={onExploreTag}
-        preselectedLeafId={collectionPrefillLeafId}
-        preselectedLeafVersion={collectionPrefillVersion}
-      />
-    );
+    if (selectedLeafId) {
+      return (
+        <PlantDetailsScreen
+          session={session}
+          leafId={selectedLeafId}
+          leafVersion={selectedLeafVersion}
+          onBack={onCloseLeafDetails}
+          onExploreTag={onExploreTag}
+          onDeleted={onCloseLeafDetails}
+        />
+      );
+    }
+
+    return <CollectionScreen session={session} onOpenLeafDetails={onOpenLeafDetails} />;
   }
 
   if (tab === 'lens') {
@@ -80,8 +88,8 @@ function renderActiveTab(
 export default function App(): React.JSX.Element {
   const [session, setSession] = useState<Session | undefined>();
   const [activeTab, setActiveTab] = useState<AppTab>('home');
-  const [collectionPrefillLeafId, setCollectionPrefillLeafId] = useState<number | undefined>();
-  const [collectionPrefillVersion, setCollectionPrefillVersion] = useState(0);
+  const [selectedLeafId, setSelectedLeafId] = useState<number | undefined>();
+  const [selectedLeafVersion, setSelectedLeafVersion] = useState(0);
   const [explorePrefillTag, setExplorePrefillTag] = useState<string | undefined>();
   const [explorePrefillVersion, setExplorePrefillVersion] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -97,6 +105,7 @@ export default function App(): React.JSX.Element {
 
   function handleLogout(): void {
     setSession(undefined);
+    setSelectedLeafId(undefined);
     setActiveTab('home');
     setMenuVisible(false);
   }
@@ -105,6 +114,10 @@ export default function App(): React.JSX.Element {
     if (itemKey === 'logout') {
       handleLogout();
       return;
+    }
+
+    if (itemKey === 'home') {
+      setSelectedLeafId(undefined);
     }
 
     setActiveTab(itemKey);
@@ -124,10 +137,14 @@ export default function App(): React.JSX.Element {
   }
 
   function handleOpenLeafDetails(leafId: number): void {
-    setCollectionPrefillLeafId(leafId);
-    setCollectionPrefillVersion((value) => value + 1);
+    setSelectedLeafId(leafId);
+    setSelectedLeafVersion((value) => value + 1);
     setActiveTab('home');
     setMenuVisible(false);
+  }
+
+  function handleCloseLeafDetails(): void {
+    setSelectedLeafId(undefined);
   }
 
   function canRunGesture(): boolean {
@@ -213,8 +230,9 @@ export default function App(): React.JSX.Element {
           handleLogout,
           handleExploreTag,
           handleOpenLeafDetails,
-          collectionPrefillLeafId,
-          collectionPrefillVersion,
+          handleCloseLeafDetails,
+          selectedLeafId,
+          selectedLeafVersion,
           explorePrefillTag,
           explorePrefillVersion
         )}
@@ -222,7 +240,13 @@ export default function App(): React.JSX.Element {
 
       <View style={styles.bottomNavWrap}>
         <View style={styles.bottomNav}>
-          <Pressable style={[styles.navButton, activeTab === 'home' && styles.navButtonActive]} onPress={() => setActiveTab('home')}>
+          <Pressable
+            style={[styles.navButton, activeTab === 'home' && styles.navButtonActive]}
+            onPress={() => {
+              setSelectedLeafId(undefined);
+              setActiveTab('home');
+            }}
+          >
             <Ionicons name="home-outline" size={26} color={activeTab === 'home' ? '#111827' : '#6b7280'} />
             <Text style={[styles.navLabel, activeTab === 'home' && styles.navLabelActive]}>Home</Text>
           </Pressable>

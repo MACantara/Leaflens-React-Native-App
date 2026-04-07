@@ -1,9 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { deleteLeaf, getLeafImageSource, getUserHistory, getUserTags, searchUserLeaves, updateLeafImageVisibility } from '../api/leaves';
+import { getLeafImageSource, getUserHistory, getUserTags, searchUserLeaves } from '../api/leaves';
 import { ApiError } from '../api/client';
-import { useAppModal } from '../components/AppModalProvider';
 import { LeafItem, Session } from '../types/models';
 import { usePullToRefreshController } from '../utils/mobileGestures';
 
@@ -14,9 +12,7 @@ const CARD_MIN_WIDTH = 260;
 
 interface CollectionScreenProps {
   session: Session;
-  onExploreTag?: (tag: string) => void;
-  preselectedLeafId?: number;
-  preselectedLeafVersion?: number;
+  onOpenLeafDetails?: (leafId: number) => void;
 }
 
 function toErrorText(error: unknown): string {
@@ -29,15 +25,11 @@ function toErrorText(error: unknown): string {
   return 'Unexpected error.';
 }
 
-export function CollectionScreen({ session, onExploreTag, preselectedLeafId, preselectedLeafVersion }: CollectionScreenProps): React.JSX.Element {
-  const { showConfirm } = useAppModal();
+export function CollectionScreen({ session, onOpenLeafDetails }: CollectionScreenProps): React.JSX.Element {
   const [leafList, setLeafList] = useState<LeafItem[]>([]);
-  const [selectedLeaf, setSelectedLeaf] = useState<LeafItem | undefined>();
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
-  const [deletingLeafId, setDeletingLeafId] = useState<number | undefined>();
-  const [updatingVisibilityLeafId, setUpdatingVisibilityLeafId] = useState<number | undefined>();
   const [error, setError] = useState('');
   const { width: viewportWidth } = useWindowDimensions();
   const { loading, refreshing, runInitialLoad, runPullToRefresh } = usePullToRefreshController();
@@ -70,25 +62,9 @@ export function CollectionScreen({ session, onExploreTag, preselectedLeafId, pre
     }
   }, [hasFilters, keyword, selectedTags, session.token, session.userId]);
 
-  const selectedLeafTags = useMemo(() => selectedLeaf?.tags ?? [], [selectedLeaf]);
-  const selectedLeafCavite = Boolean(selectedLeaf?.isGrownInCavite);
-
   useEffect(() => {
     void runInitialLoad(refreshCollection);
   }, [runInitialLoad, refreshCollection]);
-
-  useEffect(() => {
-    if (!preselectedLeafId) {
-      return;
-    }
-
-    const matchedLeaf = leafList.find((leaf) => leaf.leafId === preselectedLeafId);
-    if (!matchedLeaf) {
-      return;
-    }
-
-    setSelectedLeaf(matchedLeaf);
-  }, [leafList, preselectedLeafId, preselectedLeafVersion]);
 
   function toggleTag(tag: string): void {
     setSelectedTags((current) => {
@@ -98,146 +74,6 @@ export function CollectionScreen({ session, onExploreTag, preselectedLeafId, pre
 
       return [...current, tag];
     });
-  }
-
-  async function onDeleteLeaf(leafId: number): Promise<void> {
-    setDeletingLeafId(leafId);
-    setError('');
-
-    try {
-      await deleteLeaf(leafId, session.token);
-      setSelectedLeaf(undefined);
-      await refreshCollection();
-    } catch (deleteError) {
-      setError(toErrorText(deleteError));
-    } finally {
-      setDeletingLeafId(undefined);
-    }
-  }
-
-  async function confirmDeleteLeaf(leaf: LeafItem): Promise<void> {
-    const leafName = leaf.commonName?.trim() || 'this plant';
-    const confirmed = await showConfirm({
-      title: 'Delete from collection',
-      message: `Remove ${leafName} from your collection?`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      tone: 'danger'
-    });
-
-    if (!confirmed) {
-      return;
-    }
-
-    await onDeleteLeaf(leaf.leafId);
-  }
-
-  async function onToggleImageVisibility(leaf: LeafItem): Promise<void> {
-    setUpdatingVisibilityLeafId(leaf.leafId);
-    setError('');
-
-    const nextValue = !Boolean(leaf.isImagePublic);
-
-    try {
-      await updateLeafImageVisibility(leaf.leafId, nextValue, session.token);
-      setLeafList((current) =>
-        current.map((entry) =>
-          entry.leafId === leaf.leafId
-            ? {
-                ...entry,
-                isImagePublic: nextValue
-              }
-            : entry
-        )
-      );
-
-      setSelectedLeaf((current) =>
-        current && current.leafId === leaf.leafId
-          ? {
-              ...current,
-              isImagePublic: nextValue
-            }
-          : current
-      );
-    } catch (visibilityError) {
-      setError(toErrorText(visibilityError));
-    } finally {
-      setUpdatingVisibilityLeafId(undefined);
-    }
-  }
-
-  if (selectedLeaf) {
-    return (
-      <ScrollView style={styles.root} contentContainerStyle={styles.detailWrap}>
-        <Pressable style={styles.backRow} onPress={() => setSelectedLeaf(undefined)}>
-          <Feather name="arrow-left" size={30} color="#111827" />
-        </Pressable>
-
-        <View style={styles.detailCard}>
-          <Image source={getLeafImageSource(selectedLeaf.leafId, session.token)} style={styles.detailImage} />
-          <Text style={styles.detailTitle}>{selectedLeaf.commonName || 'N/A'}</Text>
-          <Text style={styles.detailScientific}>{selectedLeaf.scientificName || 'N/A'}</Text>
-          {selectedLeafCavite && <Text style={styles.caviteBadge}>Grows in Cavite</Text>}
-
-          <Text style={styles.detailSectionTitle}>Origin</Text>
-          <Text style={styles.detailSectionBody}>{selectedLeaf.origin || 'N/A'}</Text>
-
-          <Text style={styles.detailSectionTitle}>Uses</Text>
-          <Text style={styles.detailSectionBody}>{selectedLeaf.usage || 'N/A'}</Text>
-
-          <Text style={styles.detailSectionTitle}>Habitat</Text>
-          <Text style={styles.detailSectionBody}>{selectedLeaf.habitat || 'N/A'}</Text>
-
-          <Text style={styles.detailSectionTitle}>Tags</Text>
-          {selectedLeafTags.length > 0 ? (
-            <View style={styles.tagWrap}>
-              {selectedLeafTags.map((tag) => (
-                <Pressable key={tag} style={styles.tagPill} onPress={() => onExploreTag?.(tag)}>
-                  <Text style={styles.tagText}>{tag}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.detailSectionBody}>N/A</Text>
-          )}
-
-          {selectedLeaf.ownerUserId === session.userId && (
-            <>
-              <Text style={styles.detailSectionTitle}>Image visibility</Text>
-              <Text style={styles.detailSectionBody}>
-                {selectedLeaf.isImagePublic ? 'Public' : 'Private'}
-              </Text>
-
-              <Pressable
-                style={[styles.visibilityButton, updatingVisibilityLeafId === selectedLeaf.leafId && styles.disabledButton]}
-                onPress={() => {
-                  void onToggleImageVisibility(selectedLeaf);
-                }}
-                disabled={updatingVisibilityLeafId === selectedLeaf.leafId}
-              >
-                <Text style={styles.visibilityButtonLabel}>
-                  {updatingVisibilityLeafId === selectedLeaf.leafId
-                    ? 'Updating...'
-                    : selectedLeaf.isImagePublic
-                      ? 'Make Private'
-                      : 'Share Publicly'}
-                </Text>
-              </Pressable>
-            </>
-          )}
-
-          <Pressable
-            style={[styles.deleteButton, deletingLeafId === selectedLeaf.leafId && styles.disabledButton]}
-            onPress={() => {
-              void confirmDeleteLeaf(selectedLeaf);
-            }}
-            disabled={deletingLeafId === selectedLeaf.leafId}
-          >
-            <Text style={styles.deleteButtonLabel}>{deletingLeafId === selectedLeaf.leafId ? 'Deleting...' : 'Delete Leaf'}</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-    );
   }
 
   return (
@@ -299,7 +135,12 @@ export function CollectionScreen({ session, onExploreTag, preselectedLeafId, pre
         }}
         refreshing={refreshing}
         renderItem={({ item }) => (
-          <Pressable style={[styles.card, { width: cardWidth, minHeight: cardMinHeight }]} onPress={() => setSelectedLeaf(item)}>
+          <Pressable
+            style={[styles.card, { width: cardWidth, minHeight: cardMinHeight }]}
+            onPress={() => {
+              onOpenLeafDetails?.(item.leafId);
+            }}
+          >
             <Image source={getLeafImageSource(item.leafId, session.token)} style={[styles.image, { height: cardImageHeight }]} />
             <Text style={styles.cardTitle}>{item.commonName || 'N/A'}</Text>
             <Text style={styles.cardMeta}>{item.scientificName || 'N/A'}</Text>
@@ -417,100 +258,6 @@ const styles = StyleSheet.create({
   cardMeta: {
     color: '#4b5563',
     fontSize: 17
-  },
-  detailWrap: {
-    paddingTop: 4,
-    paddingBottom: 22,
-    gap: 12
-  },
-  backRow: {
-    width: 50,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  detailCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 16,
-    gap: 8
-  },
-  detailImage: {
-    width: '100%',
-    height: 390,
-    borderRadius: 20,
-    backgroundColor: '#d1d5db'
-  },
-  detailTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0f0f0f'
-  },
-  detailScientific: {
-    fontSize: 14,
-    color: '#4b5563'
-  },
-  caviteBadge: {
-    marginTop: 2,
-    color: '#14532d',
-    backgroundColor: '#dcfce7',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    alignSelf: 'flex-start',
-    fontSize: 12,
-    fontWeight: '700'
-  },
-  detailSectionTitle: {
-    marginTop: 8,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827'
-  },
-  detailSectionBody: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#374151'
-  },
-  tagWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8
-  },
-  tagPill: {
-    backgroundColor: '#e2e8f0',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5
-  },
-  tagText: {
-    color: '#1f2937',
-    fontSize: 12,
-    fontWeight: '600'
-  },
-  visibilityButton: {
-    marginTop: 2,
-    borderRadius: 14,
-    backgroundColor: '#e0f2fe',
-    alignItems: 'center',
-    paddingVertical: 12
-  },
-  visibilityButtonLabel: {
-    color: '#0c4a6e',
-    fontSize: 14,
-    fontWeight: '700'
-  },
-  deleteButton: {
-    marginTop: 12,
-    borderRadius: 14,
-    backgroundColor: '#fee2e2',
-    alignItems: 'center',
-    paddingVertical: 12
-  },
-  deleteButtonLabel: {
-    color: '#991b1b',
-    fontSize: 14,
-    fontWeight: '700'
   },
   disabledButton: {
     opacity: 0.6
