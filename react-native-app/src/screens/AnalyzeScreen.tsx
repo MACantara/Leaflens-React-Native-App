@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { analyzeAndSaveLeaf, analyzeLeaf } from '../api/leaves';
@@ -22,19 +22,6 @@ function getErrorMessage(error: unknown): string {
   return 'Unexpected error.';
 }
 
-function getReferenceLabel(uri: string, domain?: string): string {
-  const normalizedDomain = String(domain ?? '').trim();
-  if (normalizedDomain) {
-    return normalizedDomain;
-  }
-
-  try {
-    return new URL(uri).hostname;
-  } catch {
-    return 'Open source';
-  }
-}
-
 function renderResult(
   result: LeafAnalysisResponse,
   imageUri: string,
@@ -43,7 +30,6 @@ function renderResult(
 ): React.JSX.Element {
   const hasTags = result.tags.length > 0;
   const hasKeyCharacteristics = result.keyCharacteristics.length > 0;
-  const hasReferences = Array.isArray(result.references) && result.references.length > 0;
 
   const confidenceColor =
     result.confidenceLabel.toLowerCase() === 'high'
@@ -119,20 +105,6 @@ function renderResult(
       )}
 
       {result.isGrownInCavite && <Text style={styles.caviteBadge}>Grows in Cavite</Text>}
-
-      <Text style={styles.sectionTitle}>References</Text>
-      {hasReferences ? (
-        <View style={styles.referenceWrap}>
-          {result.references.map((reference) => (
-            <Pressable key={reference.uri} style={styles.referencePill} onPress={() => void Linking.openURL(reference.uri)}>
-              <Text style={styles.referenceTitle}>{reference.title}</Text>
-              <Text style={styles.referenceLink}>{getReferenceLabel(reference.uri, reference.domain)}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : (
-        <Text style={styles.sectionBody}>N/A</Text>
-      )}
     </View>
   );
 }
@@ -460,26 +432,5 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     fontSize: 12,
     fontWeight: '600'
-  },
-  referenceWrap: {
-    gap: 8
-  },
-  referencePill: {
-    backgroundColor: '#f8fafc',
-    borderColor: '#dbeafe',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8
-  },
-  referenceTitle: {
-    color: '#0f172a',
-    fontSize: 13,
-    fontWeight: '700'
-  },
-  referenceLink: {
-    color: '#1d4ed8',
-    fontSize: 12,
-    marginTop: 2
   }
 });
