@@ -10,13 +10,17 @@ export class ApiError extends Error {
   }
 }
 
-const maybeProcess = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
 const DEFAULT_DEV_API_BASE_URL = 'http://localhost:8080';
 const DEFAULT_PROD_API_BASE_URL = 'https://leaflens-backend.up.railway.app';
 const fallbackBaseUrl = __DEV__ ? DEFAULT_DEV_API_BASE_URL : DEFAULT_PROD_API_BASE_URL;
-const rawBaseUrl = (maybeProcess?.env?.EXPO_PUBLIC_API_BASE_URL ?? '').trim() || fallbackBaseUrl;
+const configuredBaseUrl = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').trim();
+const rawBaseUrl = configuredBaseUrl || fallbackBaseUrl;
 const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
 const REQUEST_TIMEOUT_MS = 12000;
+
+if (__DEV__) {
+  console.log(`[LeafLens] API_BASE_URL=${API_BASE_URL}`);
+}
 
 type RequestOptions = RequestInit & {
   token?: string;
@@ -89,7 +93,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     const isLocalHostBaseUrl = API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1');
     const networkHelp = isLocalHostBaseUrl
       ? `Cannot reach ${API_BASE_URL}. On a physical phone, localhost points to the phone. Set EXPO_PUBLIC_API_BASE_URL to your computer LAN IP (for example http://192.168.x.x:8080), restart Expo, and ensure backend is running.`
-      : `Cannot reach ${API_BASE_URL}. Ensure backend is running and phone and computer are on the same Wi-Fi network.`;
+      : `Cannot reach ${API_BASE_URL}. Ensure backend is running and phone and computer are on the same Wi-Fi network. If this is an Android development build using an http URL, rebuild/reinstall the dev client after native config changes (for example usesCleartextTraffic).`;
 
     if (fetchError instanceof Error && fetchError.name === 'AbortError') {
       throw new ApiError(`${networkHelp} Request timed out after ${REQUEST_TIMEOUT_MS / 1000} seconds.`, 0, {
