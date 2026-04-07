@@ -9,10 +9,11 @@ import { CollectionScreen } from './src/screens/CollectionScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { AboutScreen } from './src/screens/AboutScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 import { Session } from './src/types/models';
 import { createEdgeMenuPanResponder } from './src/utils/mobileGestures';
 
-type AppTab = 'home' | 'lens' | 'history' | 'explore' | 'about';
+type AppTab = 'home' | 'lens' | 'history' | 'explore' | 'profile' | 'about';
 
 interface MenuItem {
   key: AppTab | 'logout';
@@ -25,19 +26,29 @@ const menuItems: MenuItem[] = [
   { key: 'lens', label: 'New Plant', icon: 'camera' },
   { key: 'history', label: 'Lens History', icon: 'list' },
   { key: 'explore', label: 'Explore Leaves', icon: 'search' },
+  { key: 'profile', label: 'Profile', icon: 'user' },
   { key: 'about', label: 'About Us', icon: 'info' },
   { key: 'logout', label: 'Log out', icon: 'log-out' }
 ];
 
 const GESTURE_COOLDOWN_MS = 700;
 
-function renderActiveTab(tab: AppTab, session: Session, onNewPlant: () => void): React.JSX.Element {
+function renderActiveTab(
+  tab: AppTab,
+  session: Session,
+  onNewPlant: () => void,
+  onSessionUpdated: (nextSession: Session) => void,
+  onAccountDeleted: () => void,
+  onExploreTag: (tag: string) => void,
+  explorePrefillTag?: string,
+  explorePrefillVersion?: number
+): React.JSX.Element {
   if (tab === 'home') {
-    return <CollectionScreen session={session} />;
+    return <CollectionScreen session={session} onExploreTag={onExploreTag} />;
   }
 
   if (tab === 'lens') {
-    return <AnalyzeScreen session={session} />;
+    return <AnalyzeScreen session={session} onExploreTag={onExploreTag} />;
   }
 
   if (tab === 'history') {
@@ -45,7 +56,11 @@ function renderActiveTab(tab: AppTab, session: Session, onNewPlant: () => void):
   }
 
   if (tab === 'explore') {
-    return <ExploreScreen session={session} />;
+    return <ExploreScreen session={session} preselectedTag={explorePrefillTag} preselectedTagVersion={explorePrefillVersion} />;
+  }
+
+  if (tab === 'profile') {
+    return <ProfileScreen session={session} onSessionUpdated={onSessionUpdated} onAccountDeleted={onAccountDeleted} />;
   }
 
   return <AboutScreen onNewPlant={onNewPlant} />;
@@ -54,6 +69,8 @@ function renderActiveTab(tab: AppTab, session: Session, onNewPlant: () => void):
 export default function App(): React.JSX.Element {
   const [session, setSession] = useState<Session | undefined>();
   const [activeTab, setActiveTab] = useState<AppTab>('home');
+  const [explorePrefillTag, setExplorePrefillTag] = useState<string | undefined>();
+  const [explorePrefillVersion, setExplorePrefillVersion] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
   const lastGestureTimestampRef = useRef(0);
   const [iconsLoaded] = useFonts({
@@ -78,6 +95,18 @@ export default function App(): React.JSX.Element {
     }
 
     setActiveTab(itemKey);
+    setMenuVisible(false);
+  }
+
+  function handleExploreTag(tag: string): void {
+    const normalized = tag.trim().toLowerCase();
+    if (!normalized) {
+      return;
+    }
+
+    setExplorePrefillTag(normalized);
+    setExplorePrefillVersion((value) => value + 1);
+    setActiveTab('explore');
     setMenuVisible(false);
   }
 
@@ -164,7 +193,16 @@ export default function App(): React.JSX.Element {
       </View>
 
       <View style={styles.content}>
-        {renderActiveTab(activeTab, session, () => setActiveTab('lens'))}
+        {renderActiveTab(
+          activeTab,
+          session,
+          () => setActiveTab('lens'),
+          (nextSession) => setSession(nextSession),
+          handleLogout,
+          handleExploreTag,
+          explorePrefillTag,
+          explorePrefillVersion
+        )}
       </View>
 
       <View style={styles.bottomNavWrap}>
