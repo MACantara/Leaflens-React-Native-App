@@ -4,11 +4,14 @@ Date: 2026-04-07 (revalidated)
 
 ## Scope
 This document compares current parity between:
-- Original Java implementation in `src/main/java/leaf/ai/Leaflens` (+ security config)
+- Original Java implementation in `legacy-java-mobile-app/wrapper/src/main/java/leaf/ai/Leaflens` (+ security config)
 - TypeScript backend in `typescript-backend/src`
 - React Native app in `react-native-app/src`
 
 Baseline source for required behavior: `CORE_FUNCTIONALITY_LIST.md` plus Java controllers/security configuration.
+
+Java baseline note:
+- The Java code is archived under `legacy-java-mobile-app/` and is maintained as reference only.
 
 ## Revalidation Notes
 - This file was rechecked against current code.
@@ -60,16 +63,13 @@ Baseline source for required behavior: `CORE_FUNCTIONALITY_LIST.md` plus Java co
 
 ## Archive Readiness (Java Code)
 
-Verdict: **Yes, you can move Java sources to an archive folder** once you complete a quick safety gate.
+Verdict: **Completed**. Java sources are already archived in `legacy-java-mobile-app/`.
 
-Suggested archive target:
-- `legacy-java-mobile-app/` (or more precisely `legacy-java-backend/` if this is server code)
-
-Safety gate before moving:
-1. Confirm all production traffic is routed to `typescript-backend`.
-2. Preserve Java code history (keep git history; avoid deleting from git history).
-3. Keep baseline docs (`CORE_FUNCTIONALITY_LIST.md`, this file) referencing archived paths.
-4. Run smoke tests on TypeScript backend + React Native critical flows after move.
+Recommended ongoing safety checks:
+1. Keep all production traffic routed to `typescript-backend`.
+2. Preserve Java code history for traceability.
+3. Keep baseline docs (`CORE_FUNCTIONALITY_LIST.md`, this file) aligned with archived paths.
+4. Run smoke tests on TypeScript backend + React Native critical flows after major changes.
 
 ## Overall Parity Summary
 
