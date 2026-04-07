@@ -84,6 +84,9 @@ Platform shortcuts:
 - `npm run ios`
 - `npm run web`
 
+Fedora Android environment setup guide:
+- [`react-native-app/README.md` -> Fedora Android setup (one-time)](react-native-app/README.md#fedora-android-setup-one-time)
+
 ## Day-to-day command reference
 
 ### Backend (`typescript-backend`)

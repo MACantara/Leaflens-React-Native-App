@@ -48,6 +48,62 @@ npm run start
 
 Then run Android/iOS/web from Expo CLI.
 
+## Fedora Android setup (one-time)
+Use this when developing on Fedora and building with `npm run android`.
+
+1. Install Java 21:
+
+```bash
+sudo dnf install java-21-openjdk-devel
+```
+
+2. Prepare Android SDK command-line tools directory structure:
+
+```bash
+mkdir -p ~/Android/Sdk/cmdline-tools
+```
+
+Download Android Command-line Tools from the Android Studio site, unzip them, and place the extracted folder contents under:
+
+`~/Android/Sdk/cmdline-tools/latest/`
+
+Expected binaries include:
+- `~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager`
+
+3. Persist environment variables in shell profile (`~/.bashrc`):
+
+```bash
+cat <<'EOF' >> ~/.bashrc
+
+# Android SDK & Java Configuration
+export JAVA_HOME="/usr/lib/jvm/java-21-openjdk"
+export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
+export ANDROID_HOME="$ANDROID_SDK_ROOT"
+export PATH="$JAVA_HOME/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+EOF
+
+source ~/.bashrc
+```
+
+4. Accept licenses and install required NDK:
+
+```bash
+yes | sdkmanager --licenses
+sdkmanager "ndk;27.1.12297006"
+```
+
+5. Verify tooling and run:
+
+```bash
+java -version
+sdkmanager --version
+npm run android
+```
+
+Notes:
+- `ANDROID_SDK_ROOT` must point to a full SDK directory (for example `~/Android/Sdk`), not a standalone `platform-tools` extraction.
+- This codebase currently requires NDK `27.1.12297006` for Android builds.
+
 ## Windows Android setup (one-time)
 Current machine status from setup:
 - Android Studio installed
